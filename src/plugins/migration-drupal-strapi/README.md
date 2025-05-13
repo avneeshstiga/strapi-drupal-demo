@@ -1,3 +1,0 @@
-# migration-drupal-strapi
-
-migration

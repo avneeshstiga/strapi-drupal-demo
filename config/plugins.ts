@@ -1,6 +1,6 @@
 export default () => ({
-  "migration-drupal-strapi": {
+  "import-content-type": {
     enabled: true,
-    resolve: "./src/plugins/migration-drupal-strapi",
+    resolve: "./src/plugins/import-content-type",
   },
 });
