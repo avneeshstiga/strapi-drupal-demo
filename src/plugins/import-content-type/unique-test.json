@@ -1,1 +1,12 @@
-[{"title": "Unique Article 1", "description": "This is a unique article for testing", "slug": "unique-article-1"}, {"title": "Unique Article 2", "description": "This is another unique article", "slug": "unique-article-2"}]
+[
+  {
+    "title": "Unique Article 1",
+    "description": "This is a unique article for testing",
+    "slug": "unique-article-1"
+  },
+  {
+    "title": "Unique Article 2",
+    "description": "This is another unique article",
+    "slug": "unique-article-2"
+  }
+]

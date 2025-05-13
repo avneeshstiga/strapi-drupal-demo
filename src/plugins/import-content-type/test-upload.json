@@ -1,1 +1,18 @@
-[{"title": "Test Upload Article 1", "description": "This article was uploaded via file upload", "slug": "test-upload-1"}, {"title": "Test Upload Article 2", "description": "This is another uploaded article", "slug": "test-upload-2"}]
+[
+  {
+    "title": "Test Article 1",
+    "description": "Description for article 1",
+    "slug": "test-article-1",
+    "category": 1,
+    "author": 1,
+    "cover": "https://as2.ftcdn.net/v2/jpg/05/28/07/85/1000_F_528078580_5iygpOIuvtr2g90WuaFtqb3jXtXSIbVv.jpg"
+  },
+  {
+    "title": "Test Article 2",
+    "description": "Description for article 2",
+    "slug": "test-article-2",
+    "category": 2,
+    "author": 2,
+    "cover": "https://as1.ftcdn.net/v2/jpg/02/00/04/68/1000_F_200046800_YUbZhgIVR6lOwSa66UmUNmQnx7eve952.jpg"
+  }
+]
