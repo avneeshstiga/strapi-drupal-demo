@@ -35,4 +35,13 @@ export default [
       auth: false, // Make this endpoint public
     },
   },
+  {
+    method: 'POST',
+    path: '/import-local-file/:contentType',
+    handler: 'controller.importFromLocalFile',
+    config: {
+      policies: [],
+      auth: false, // Make this endpoint public
+    },
+  },
 ];

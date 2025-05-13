@@ -106,25 +106,55 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
         return ctx.badRequest('Content type parameter is required');
       }
 
+      // Debug: Log the entire request structure
+      strapi.log.info('Request files structure:', {
+        files: ctx.request.files,
+        body: ctx.request.body,
+        keys: ctx.request.files ? Object.keys(ctx.request.files) : [],
+      });
+
       // Check if files exist in the request
-      if (!ctx.request.files || !Object.keys(ctx.request.files).length) {
+      if (!ctx.request.files || Object.keys(ctx.request.files).length === 0) {
         return ctx.badRequest('No files uploaded. Please upload a JSON file in form-data.');
       }
 
-      // Get the file - handle both single file and array cases
+      // Get the field name used for the file upload
       const fileField = Object.keys(ctx.request.files)[0];
+      strapi.log.info(`File field found: ${fileField}`);
+
+      // Get the file data
       const fileData = ctx.request.files[fileField];
+
+      // Debug log the file data structure
+      strapi.log.info('File data structure:', JSON.stringify(fileData, null, 2));
+
+      if (!fileData) {
+        return ctx.badRequest(`No file data found for field: ${fileField}`);
+      }
+
+      // Handle both single file and array of files
       const file = Array.isArray(fileData) ? fileData[0] : fileData;
 
-      strapi.log.info(`Processing uploaded file: ${file.name}`);
+      if (!file) {
+        return ctx.badRequest('File data is invalid or empty');
+      }
 
-      // Create temp file path
-      const tempDir = os.tmpdir();
-      const tempFilePath = path.join(tempDir, `import_${Date.now()}_${file.name}`);
+      // Log detailed file info
+      strapi.log.info(`Processing uploaded file:`, {
+        name: file.name,
+        size: file.size,
+        path: file.path,
+        type: file.type,
+      });
+
+      if (!file.path) {
+        return ctx.badRequest('File path is missing. The upload may have failed.');
+      }
 
       try {
         // Read uploaded file data
         const fileContent = fs.readFileSync(file.path, 'utf8');
+        strapi.log.info(`Successfully read file content, size: ${fileContent.length} chars`);
 
         // Validate JSON content
         let jsonData;
@@ -149,20 +179,83 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
         return ctx.send({
           success: true,
-          file: file.name,
+          file: file.name || 'uploaded-file',
           recordsCount: jsonData.length,
           result,
         });
-      } catch (error) {
-        // Clean up temp file if it exists
-        if (fs.existsSync(tempFilePath)) {
-          fs.unlinkSync(tempFilePath);
-        }
-        throw error;
+      } catch (fileError) {
+        strapi.log.error(`File processing error: ${fileError.message}`);
+        return ctx.badRequest(`Error processing file: ${fileError.message}`);
       }
     } catch (error) {
       strapi.log.error(`File upload error: ${error.message}`);
       return ctx.badRequest(error.message || 'Error processing uploaded file');
+    }
+  },
+
+  /**
+   * Import data from a local file on the server
+   * @param ctx Koa context
+   */
+  async importFromLocalFile(ctx) {
+    try {
+      const { contentType } = ctx.params;
+      const { filePath } = ctx.request.body;
+
+      if (!contentType) {
+        return ctx.badRequest('Content type parameter is required');
+      }
+
+      if (!filePath) {
+        return ctx.badRequest('File path is required in the request body');
+      }
+
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        return ctx.badRequest(`File not found at path: ${filePath}`);
+      }
+
+      strapi.log.info(`Importing data from local file: ${filePath}`);
+
+      try {
+        // Read file content
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        strapi.log.info(`Successfully read file content, size: ${fileContent.length} chars`);
+
+        // Parse and validate JSON content
+        let jsonData;
+        try {
+          jsonData = JSON.parse(fileContent);
+
+          // Validate it's an array
+          if (!Array.isArray(jsonData)) {
+            return ctx.badRequest('File must contain a JSON array of records');
+          }
+
+          strapi.log.info(`Valid JSON found with ${jsonData.length} records`);
+        } catch (jsonError) {
+          return ctx.badRequest(`Invalid JSON in file: ${jsonError.message}`);
+        }
+
+        // Process the import
+        const result = await strapi
+          .plugin('import-content-type')
+          .service('service')
+          .importData(contentType, jsonData);
+
+        return ctx.send({
+          success: true,
+          file: path.basename(filePath),
+          recordsCount: jsonData.length,
+          result,
+        });
+      } catch (fileError) {
+        strapi.log.error(`File processing error: ${fileError.message}`);
+        return ctx.badRequest(`Error processing file: ${fileError.message}`);
+      }
+    } catch (error) {
+      strapi.log.error(`Local file import error: ${error.message}`);
+      return ctx.badRequest(error.message || 'Error importing from local file');
     }
   },
 });
