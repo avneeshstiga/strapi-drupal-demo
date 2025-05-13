@@ -93,6 +93,78 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       return ctx.badRequest(error.message || 'An error occurred during import');
     }
   },
+
+  /**
+   * Handle file upload from form-data, validate JSON content, and import data
+   * @param ctx Koa context
+   */
+  async handleFileUpload(ctx) {
+    try {
+      const { contentType } = ctx.params;
+
+      if (!contentType) {
+        return ctx.badRequest('Content type parameter is required');
+      }
+
+      // Check if files exist in the request
+      if (!ctx.request.files || !Object.keys(ctx.request.files).length) {
+        return ctx.badRequest('No files uploaded. Please upload a JSON file in form-data.');
+      }
+
+      // Get the file - handle both single file and array cases
+      const fileField = Object.keys(ctx.request.files)[0];
+      const fileData = ctx.request.files[fileField];
+      const file = Array.isArray(fileData) ? fileData[0] : fileData;
+
+      strapi.log.info(`Processing uploaded file: ${file.name}`);
+
+      // Create temp file path
+      const tempDir = os.tmpdir();
+      const tempFilePath = path.join(tempDir, `import_${Date.now()}_${file.name}`);
+
+      try {
+        // Read uploaded file data
+        const fileContent = fs.readFileSync(file.path, 'utf8');
+
+        // Validate JSON content
+        let jsonData;
+        try {
+          jsonData = JSON.parse(fileContent);
+
+          // Validate it's an array
+          if (!Array.isArray(jsonData)) {
+            return ctx.badRequest('File must contain a JSON array of records');
+          }
+
+          strapi.log.info(`Valid JSON found with ${jsonData.length} records`);
+        } catch (jsonError) {
+          return ctx.badRequest(`Invalid JSON in file: ${jsonError.message}`);
+        }
+
+        // Process the import
+        const result = await strapi
+          .plugin('import-content-type')
+          .service('service')
+          .importData(contentType, jsonData);
+
+        return ctx.send({
+          success: true,
+          file: file.name,
+          recordsCount: jsonData.length,
+          result,
+        });
+      } catch (error) {
+        // Clean up temp file if it exists
+        if (fs.existsSync(tempFilePath)) {
+          fs.unlinkSync(tempFilePath);
+        }
+        throw error;
+      }
+    } catch (error) {
+      strapi.log.error(`File upload error: ${error.message}`);
+      return ctx.badRequest(error.message || 'Error processing uploaded file');
+    }
+  },
 });
 
 export default controller;

@@ -26,4 +26,13 @@ export default [
       auth: false, // Make this endpoint public
     },
   },
+  {
+    method: 'POST',
+    path: '/upload-file/:contentType',
+    handler: 'controller.handleFileUpload',
+    config: {
+      policies: [],
+      auth: false, // Make this endpoint public
+    },
+  },
 ];
