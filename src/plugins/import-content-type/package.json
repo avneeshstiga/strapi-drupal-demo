@@ -22,7 +22,13 @@
     "verify": "strapi-plugin verify",
     "test:ts:back": "run -T tsc -p server/tsconfig.json"
   },
-  "dependencies": {},
+  "dependencies": {
+    "axios": "^1.9.0",
+    "uuid": "^11.1.0",
+    "mime-types": "^3.0.1",
+    "node-fetch": "^3.3.2",
+    "formdata-node": "^6.0.3"
+  },
   "devDependencies": {
     "@strapi/strapi": "^5.13.0",
     "@strapi/sdk-plugin": "^5.3.2",
