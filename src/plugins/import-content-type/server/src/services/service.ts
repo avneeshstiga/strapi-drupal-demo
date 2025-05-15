@@ -51,7 +51,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       const response = await axios.get(url, { responseType: 'arraybuffer' });
 
       // Generate a unique filename
-      const urlPath = new URL(url).pathname;
+      const urlPath = new URL(url).pathname; 
       const extension = path.extname(urlPath) || '.jpg'; // Default to .jpg if no extension
       const filename = `${uuidv4()}${extension}`;
       const tmpFilePath = path.join(os.tmpdir(), filename);
@@ -178,7 +178,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
 
           // strapi.log.info('Upload response', uploadJson[0]);
 
-          
+
           await strapi.entityService.create(`api::${contentType}.${contentType}`, {
             data: record,
           });
