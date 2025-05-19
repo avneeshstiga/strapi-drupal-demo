@@ -84,6 +84,17 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
         .service('service')
         .importData(contentType, parsedData);
 
+      if (result.errors.length > 0) {
+        fs.writeFileSync(`${contentType}-errors.json`, JSON.stringify(result.errors, null, 2));
+      }
+
+      if (result.failedRecords.length > 0) {
+        fs.writeFileSync(
+          `${contentType}-failed-records.json`,
+          JSON.stringify(result.failedRecords, null, 2)
+        );
+      }
+
       return ctx.send({
         success: true,
         result,

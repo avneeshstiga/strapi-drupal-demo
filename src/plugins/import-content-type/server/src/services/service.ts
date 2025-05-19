@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import mime from 'mime-types';
 import os from 'os';
 import FormData from 'form-data'; // Node.js FormData implementation
+import { validateRecordAgainstSchema } from '../utils/validateRecordAgainstSchema';
 
 const service = ({ strapi }: { strapi: Core.Strapi }) => ({
   getWelcomeMessage() {
@@ -396,8 +397,9 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
     if (!contentType || !data || !Array.isArray(data)) {
       throw new Error('Invalid parameters: contentType and data array are required');
     }
+    const schema = strapi.contentTypes[`api::${contentType}.${contentType}`];
 
-    if (!strapi.contentTypes[`api::${contentType}.${contentType}`]) {
+    if (!schema) {
       throw new Error(`Content type "${contentType}" not found`);
     }
 
@@ -406,9 +408,10 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       totalRecords: data.length,
       successful: 0,
       failed: 0,
-      errors: [] as { index: number; message: string }[],
       processedImages: 0,
       skippedImages: 0,
+      errors: [] as { index: number; error: any }[],
+      failedRecords: [] as any[],
     };
 
     // Process records in batches to avoid overwhelming the database
@@ -434,6 +437,10 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
           // Clean up any failed image references before creating the entry
           const sanitizedRecord = this.sanitizeRecordBeforeCreate(processedRecord);
           strapi.log.info(`sanitizedRecord: ${JSON.stringify(sanitizedRecord, null, 2)}`);
+
+          // Validate the record against the schema
+          await validateRecordAgainstSchema(schema, sanitizedRecord);
+          // Create entry in the specified content type
           await strapi.entityService.create(`api::${contentType}.${contentType}`, {
             data: sanitizedRecord,
           });
@@ -444,8 +451,9 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
           results.failed++;
           results.errors.push({
             index: recordIndex,
-            message: error.message || 'Unknown error',
+            error: { ...error },
           });
+          results.failedRecords.push(record);
         }
       });
 
