@@ -50,16 +50,6 @@
       "type": "component",
       "repeatable": false,
       "component": "shared.seo"
-    },
-    "article_images": {
-      "allowedTypes": [
-        "images",
-        "files",
-        "videos",
-        "audios"
-      ],
-      "type": "media",
-      "multiple": true
     }
   }
 }
