@@ -6,7 +6,6 @@ import mime from 'mime-types';
 import os from 'os';
 import FormData from 'form-data'; // Node.js FormData implementation
 import { validateRecordAgainstSchema } from '../utils/validateRecordAgainstSchema';
-import { checkFileExists, checkFolderExists, createFolder } from '../utils/media';
 
 const service = ({ strapi }: { strapi: Core.Strapi }) => ({
   getWelcomeMessage() {
