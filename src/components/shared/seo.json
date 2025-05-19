@@ -20,7 +20,15 @@
       "type": "media",
       "multiple": false,
       "required": false,
-      "allowedTypes": ["images"]
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "seo_josn": {
+      "type": "json"
+    },
+    "keywords": {
+      "type": "string"
     }
   }
 }
