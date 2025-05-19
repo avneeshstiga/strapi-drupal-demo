@@ -1,4 +1,4 @@
-export default () => ({
+export default ({ env }) => ({
   "import-content-type": {
     enabled: true,
     resolve: "./src/plugins/import-content-type",
@@ -7,4 +7,8 @@ export default () => ({
       uploadToken: process.env.STRAPI_UPLOAD_TOKEN || "",
     },
   },
+  seo: {
+    enabled: true,
+  },
 });
+
