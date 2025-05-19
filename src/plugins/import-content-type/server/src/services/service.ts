@@ -317,9 +317,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
             const uploadedFile = await this.uploadFileToStrapiMediaLibrary(fileData);
             if (uploadedFile && uploadedFile.id) {
               // Replace the URL with the correct media reference format for Strapi 5
-              result[key] = {
-                connect: [uploadedFile.id],
-              };
+              result[key] = [uploadedFile.id];
               strapi.log.info(`Processed image URL ${value} into media ID ${uploadedFile.id}`);
             } else {
               strapi.log.warn(`Failed to upload image from URL ${value}, keeping original value`);
@@ -359,9 +357,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
 
               if (uploadedFile && uploadedFile.id) {
                 // Replace the object with the media reference using Strapi 5 format
-                result[key] = {
-                  connect: [uploadedFile.id],
-                };
+                result[key] = [uploadedFile.id];
                 strapi.log.info(
                   `Processed image object with URL ${objWithUrl.url} into media ID ${uploadedFile.id}`
                 );
@@ -437,7 +433,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
 
           // Clean up any failed image references before creating the entry
           const sanitizedRecord = this.sanitizeRecordBeforeCreate(processedRecord);
-
+          strapi.log.info(`sanitizedRecord: ${JSON.stringify(sanitizedRecord, null, 2)}`);
           await strapi.entityService.create(`api::${contentType}.${contentType}`, {
             data: sanitizedRecord,
           });
