@@ -161,10 +161,10 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       // Make a direct HTTP request to the Strapi upload endpoint
       const serverUrl = strapi.config.server.url || 'http://localhost:1337';
       const apiUrl = `${serverUrl}/api/upload`;
-      strapi.log.info(`Posting to API URL: ${apiUrl}`);
+      
 
       const response = await axios.post(apiUrl, form, { headers });
-
+      strapi.log.info(`Posting to API URL: ${apiUrl} ${headers} ${form}`);
       if (response.data && response.data[0] && response.data[0].id) {
         strapi.log.info(`API upload succeeded with ID ${response.data[0].id}`);
         return response.data[0];
@@ -173,6 +173,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
         return null;
       }
     } catch (apiError) {
+      
       strapi.log.error(`API upload approach failed: ${apiError.message}`);
       return null;
     }
@@ -308,6 +309,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
     for (const [key, value] of Object.entries(result)) {
       // If value is a string and an image URL
       if (typeof value === 'string' && this.isImageUrl(value)) {
+        strapi.log.info("Inside Cond 1, for....", key)
         try {
           // Download and upload the image to Strapi
           strapi.log.info(`Processing image URL: ${value}`);
@@ -330,8 +332,69 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
           strapi.log.error(`Error processing image URL ${value}: ${error.message}`);
         }
       }
+      else if (Array.isArray(value)) {
+        strapi.log.info("Inside Cond 3, for.......", key)
+        const processedArray: any[] = [];
+
+        for (const item of value) {
+          if (typeof item === 'string' ) {
+            try {
+              strapi.log.info(`Processing image URL from array: ${item}`);
+              const fileData = await this.downloadImage(item);
+
+              if (fileData && fileData.data) {
+                const uploadedFile = await this.uploadFileToStrapiMediaLibrary(fileData);
+                if (uploadedFile && uploadedFile.id) {
+                  processedArray.push(uploadedFile.id);
+                  strapi.log.info(`Processed array image URL ${item} into media ID ${uploadedFile.id}`);
+                } else {
+                  strapi.log.warn(`Failed to upload image from array URL ${item}, skipping`);
+                  processedArray.push(item); // Optional: retain original if failed
+                }
+              } else {
+                strapi.log.warn(`Failed to download image from array URL ${item}, skipping`);
+                processedArray.push(item);
+              }
+            } catch (error) {
+              strapi.log.error(`Error processing image from array URL ${item}: ${error.message}`);
+              processedArray.push(item);
+            }
+          }
+          else if (item && typeof item === 'object' && item.url && this.isImageUrl(item.url)) {
+            try {
+              strapi.log.info(`Processing image object from array: ${item.url}`);
+              const fileData = await this.downloadImage(item.url);
+
+              if (fileData && fileData.data) {
+                const caption = item.caption || item.alt || item.name || fileData.name;
+                const uploadedFile = await this.uploadFileToStrapiMediaLibrary(fileData, caption);
+
+                if (uploadedFile && uploadedFile.id) {
+                  processedArray.push(uploadedFile.id);
+                  strapi.log.info(`Processed image object URL ${item.url} into media ID ${uploadedFile.id}`);
+                } else {
+                  strapi.log.warn(`Failed to upload image from object ${item.url}, skipping`);
+                  processedArray.push(item);
+                }
+              } else {
+                strapi.log.warn(`Failed to download image from object ${item.url}, skipping`);
+                processedArray.push(item);
+              }
+            } catch (error) {
+              strapi.log.error(`Error processing image object from array ${item.url}: ${error.message}`);
+              processedArray.push(item);
+            }
+          }
+          else {
+            processedArray.push(item); // Keep original if not a valid image
+          }
+        }
+
+        result[key] = processedArray;
+      }
       // Handle special case for object with url property that might be an image
       else if (value && typeof value === 'object') {
+        strapi.log.info("Inside Cond 2, for....", {key})
         // Check if the object has a URL property that might be an image
         const objWithUrl = value as {
           url?: string;
@@ -382,6 +445,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
           result[key] = await this.processObjectForImages(value);
         }
       }
+      
     }
 
     return result;
