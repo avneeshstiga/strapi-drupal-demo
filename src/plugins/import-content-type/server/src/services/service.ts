@@ -1,12 +1,12 @@
 import type { Core } from '@strapi/strapi';
-import fs from 'fs';
+import fs from 'fs-extra';
 import axios from 'axios';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import mime from 'mime-types';
 import os from 'os';
 import FormData from 'form-data'; // Node.js FormData implementation
 import { validateRecordAgainstSchema } from '../utils/validateRecordAgainstSchema';
+import { checkFileExists, checkFolderExists, createFolder } from '../utils/media';
 
 const service = ({ strapi }: { strapi: Core.Strapi }) => ({
   getWelcomeMessage() {
@@ -46,16 +46,15 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
   /**
    * Download an image from a URL and prepare it for upload to Strapi
    * @param url - Image URL
+   * @param contentType - The target content type API ID
    * @returns Object with file data ready for upload
    */
-  async downloadImage(url: string) {
+  async downloadImage(url: string, contentType: string) {
     try {
       if (!url || typeof url !== 'string') {
         strapi.log.error(`Invalid URL provided to downloadImage: ${url}`);
         return null;
       }
-
-      strapi.log.info(`Attempting to download image from ${url}`);
 
       // Try to validate the URL
       let validatedUrl;
@@ -65,6 +64,35 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
         strapi.log.error(`Invalid URL format: ${url}`);
         return null;
       }
+
+      // get filename from url
+      const urlPath = validatedUrl.pathname;
+      const extension = path.extname(urlPath) || '.jpg'; // Default to .jpg if no extension
+      const name = path.basename(urlPath, extension);
+      const filename = `${name}${extension}`;
+
+      strapi.log.info(`Checking if image ${filename} exists in strapi media library`);
+      // Check if folder exists
+      let folderId = await checkFolderExists(contentType);
+      if (!Boolean(folderId)) {
+        strapi.log.info(`Folder ${contentType} does not exist, creating it`);
+        folderId = await createFolder(contentType);
+      } else {
+        strapi.log.info(`Folder ${contentType} already exists, ${folderId}`);
+        const fileId = await checkFileExists(filename);
+        if (Boolean(fileId)) {
+          strapi.log.info(`Image ${filename} already exists in strapi media library`);
+          return {
+            data: null,
+            name: filename,
+            id: fileId,
+            folderId,
+            alreadyExists: true,
+          };
+        }
+      }
+
+      strapi.log.info(`Attempting to download image from ${url}`);
 
       // Download the image as a buffer
       const response = await axios.get(url, {
@@ -81,37 +109,28 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       }
 
       // Create buffer from response data
-      const data = Buffer.from(response.data);
-      if (data.length === 0) {
+      const buffer = Buffer.from(response.data);
+      if (buffer.length === 0) {
         strapi.log.error(`Empty buffer created from ${url}`);
         return null;
       }
 
-      // Generate a unique filename
-      const urlPath = validatedUrl.pathname;
-      const extension = path.extname(urlPath) || '.jpg'; // Default to .jpg if no extension
-      const filename = `${uuidv4()}${extension}`;
-
-      // Determine MIME type
-      const mimeType = mime.lookup(extension) || 'image/jpeg';
+      const type = response.headers['content-type'];
+      const mimeType = type || 'image/jpeg';
 
       // Validate content type if available
-      if (
-        response.headers['content-type'] &&
-        !response.headers['content-type'].startsWith('image/')
-      ) {
-        strapi.log.error(
-          `URL returned non-image content type: ${response.headers['content-type']}`
-        );
+      if (type && !type.startsWith('image/')) {
+        strapi.log.error(`URL returned non-image content type: ${type}`);
         return null;
       }
 
       // Return file data for upload
       return {
-        data,
+        data: buffer,
         name: filename,
         type: mimeType,
-        size: data.length,
+        size: buffer.length,
+        folderId,
       };
     } catch (error) {
       if (error.response) {
@@ -131,15 +150,17 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
    * Upload a file to Strapi's media library using direct API call
    * @param fileData - File data object with data buffer
    * @param tmpFilePath - Path to temporary file
+   * @param folderId - Folder ID to upload to
    * @returns Uploaded file object
    */
-  async uploadViaAPI(fileData, tmpFilePath) {
+  async uploadViaAPI(fileData, tmpFilePath, folderId) {
     try {
       // Create form data for the API request
       const form = new FormData();
 
       // Append the file to form data
-      form.append('files', fs.createReadStream(tmpFilePath));
+      form.append('file', fs.createReadStream(tmpFilePath));
+      form.append('folderId', folderId);
 
       // Create headers from form
       const headers = form.getHeaders();
@@ -160,20 +181,26 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
 
       // Make a direct HTTP request to the Strapi upload endpoint
       const serverUrl = strapi.config.server.url || 'http://localhost:1337';
-      const apiUrl = `${serverUrl}/api/upload`;
-      
+      const apiUrl = `${serverUrl}/api/media/upload`;
 
       const response = await axios.post(apiUrl, form, { headers });
-      strapi.log.info(`Posting to API URL: ${apiUrl} ${headers} ${form}`);
-      if (response.data && response.data[0] && response.data[0].id) {
-        strapi.log.info(`API upload succeeded with ID ${response.data[0].id}`);
-        return response.data[0];
+      strapi.log.info(`Posting to API URL: ${apiUrl}`);
+
+      if (response.data && response.data.data && response.data.data[0].id) {
+        strapi.log.info(`API upload succeeded with ID ${response.data.data[0].id}`);
+
+        // await axios.put(
+        //   `${serverUrl}/api/media/update`, // or `/upload/files/${fileId}` depending on plugin
+        //   { id: response.data.data[0].id, folderId },
+        //   { headers: { Authorization: `Bearer ${token}` } }
+        // );
+
+        return response.data.data[0];
       } else {
         strapi.log.error('API upload response invalid');
         return null;
       }
     } catch (apiError) {
-      
       strapi.log.error(`API upload approach failed: ${apiError.message}`);
       return null;
     }
@@ -194,7 +221,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       }
 
       // Validate required properties exist
-      if (!fileData.name || !fileData.type) {
+      if (!fileData.name || !fileData.type || !fileData.folderId) {
         strapi.log.error('Missing required properties in fileData');
         return null;
       }
@@ -208,12 +235,6 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
 
       strapi.log.info(`Uploading file ${fileData.name} to media library`);
 
-      // Prepare file for upload in Strapi 5 format
-      // Convert fileData.buffer to data if it exists for backward compatibility
-      if (fileData.buffer && !fileData.data) {
-        fileData.data = fileData.buffer;
-      }
-
       // Validate data exists
       if (!fileData.data) {
         strapi.log.error('Missing data in fileData');
@@ -224,51 +245,49 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       let tmpFilePath = null;
       try {
         // Create a temporary file
-        const tmpDir = os.tmpdir();
+        const tmpDir = path.join(os.tmpdir(), 'strapi-upload'); // isolate your own subdir
         tmpFilePath = path.join(tmpDir, fileData.name);
 
+        // Ensure tmp dir exists
+        await fs.ensureDir(tmpDir);
+
         // Write the buffer to a temporary file
-        fs.writeFileSync(tmpFilePath, fileData.data);
+        await fs.writeFile(tmpFilePath, fileData.data);
         strapi.log.info(`Created temporary file at ${tmpFilePath}`);
 
         // Try to upload using upload service first
-        try {
-          // Prepare the file object in the format expected by Strapi 5
-          const fileToUpload = {
-            path: tmpFilePath,
-            name: fileData.name,
-            type: fileData.type,
-            size: fs.statSync(tmpFilePath).size,
-          };
+        // try {
+        //   // Prepare the file object in the format expected by Strapi 5
 
-          // Upload using Strapi upload service
-          const results = await uploadService.upload({
-            files: fileToUpload,
-            data: {
-              fileInfo: {
-                alternativeText: name || fileData.name || '',
-                caption: name || fileData.name || '',
-                name: name || (fileData.name ? fileData.name.replace(/\.[^/.]+$/, '') : ''),
-              },
-            },
-          });
+        //   // Upload using Strapi upload service
+        //   const results = await uploadService.upload({
+        //     files: [
+        //       {
+        //         name: fileData.name,
+        //         type: fileData.type,
+        //         size: fs.statSync(tmpFilePath).size,
+        //         path: tmpFilePath,
+        //       },
+        //     ],
+        //     data: {},
+        //   });
 
-          // Check if upload was successful
-          if (results && Array.isArray(results) && results.length > 0 && results[0].id) {
-            strapi.log.info(`Successfully uploaded file to media library with ID ${results[0].id}`);
-            return results[0];
-          } else {
-            strapi.log.error('Upload service returned invalid result');
-          }
-        } catch (uploadError) {
-          strapi.log.error(`Error during upload service call: ${uploadError.message}`);
-          if (uploadError.stack) {
-            strapi.log.error(`Stack trace: ${uploadError.stack}`);
-          }
-        }
+        //   // Check if upload was successful
+        //   if (results && Array.isArray(results) && results.length > 0 && results[0].id) {
+        //     strapi.log.info(`Successfully uploaded file to media library with ID ${results[0].id}`);
+        //     return results[0];
+        //   } else {
+        //     strapi.log.error('Upload service returned invalid result');
+        //   }
+        // } catch (uploadError) {
+        //   strapi.log.error(`Error during upload service call: ${uploadError.message}`);
+        //   if (uploadError.stack) {
+        //     strapi.log.error(`Stack trace: ${uploadError.stack}`);
+        //   }
+        // }
 
         // If service upload failed, try direct API upload
-        return await this.uploadViaAPI(fileData, tmpFilePath);
+        return await this.uploadViaAPI(fileData, tmpFilePath, fileData.folderId);
       } finally {
         // Clean up the temporary file
         if (tmpFilePath && fs.existsSync(tmpFilePath)) {
@@ -293,12 +312,14 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
    * @param obj - Object to process
    * @returns Processed object with image URLs replaced by media references
    */
-  async processObjectForImages(obj: any) {
+  async processObjectForImages(obj: any, contentType: string) {
     if (!obj || typeof obj !== 'object') return obj;
 
     // Handle array case
     if (Array.isArray(obj)) {
-      const results = await Promise.all(obj.map((item) => this.processObjectForImages(item)));
+      const results = await Promise.all(
+        obj.map((item) => this.processObjectForImages(item, contentType))
+      );
       return results;
     }
 
@@ -309,11 +330,11 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
     for (const [key, value] of Object.entries(result)) {
       // If value is a string and an image URL
       if (typeof value === 'string' && this.isImageUrl(value)) {
-        strapi.log.info("Inside Cond 1, for....", key)
+        strapi.log.info('Inside Cond 1, for....', key);
         try {
           // Download and upload the image to Strapi
           strapi.log.info(`Processing image URL: ${value}`);
-          const fileData = await this.downloadImage(value);
+          const fileData = await this.downloadImage(value, contentType);
 
           // If download was successful, try to upload
           if (fileData && fileData.data) {
@@ -325,32 +346,39 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
             } else {
               strapi.log.warn(`Failed to upload image from URL ${value}, keeping original value`);
             }
+          } else if (fileData && fileData.alreadyExists) {
+            strapi.log.info(`Image ${fileData.name} already exists in strapi media library`);
+            result[key] = [fileData.id];
           } else {
             strapi.log.warn(`Failed to download image from URL ${value}, keeping original value`);
           }
         } catch (error) {
           strapi.log.error(`Error processing image URL ${value}: ${error.message}`);
         }
-      }
-      else if (Array.isArray(value)) {
-        strapi.log.info("Inside Cond 3, for.......", key)
+      } else if (Array.isArray(value)) {
+        strapi.log.info('Inside Cond 3, for.......', key);
         const processedArray: any[] = [];
 
         for (const item of value) {
-          if (typeof item === 'string' ) {
+          if (typeof item === 'string') {
             try {
               strapi.log.info(`Processing image URL from array: ${item}`);
-              const fileData = await this.downloadImage(item);
+              const fileData = await this.downloadImage(item, contentType);
 
               if (fileData && fileData.data) {
                 const uploadedFile = await this.uploadFileToStrapiMediaLibrary(fileData);
                 if (uploadedFile && uploadedFile.id) {
                   processedArray.push(uploadedFile.id);
-                  strapi.log.info(`Processed array image URL ${item} into media ID ${uploadedFile.id}`);
+                  strapi.log.info(
+                    `Processed array image URL ${item} into media ID ${uploadedFile.id}`
+                  );
                 } else {
                   strapi.log.warn(`Failed to upload image from array URL ${item}, skipping`);
                   processedArray.push(item); // Optional: retain original if failed
                 }
+              } else if (fileData && fileData.alreadyExists) {
+                strapi.log.info(`Image ${fileData.name} already exists in strapi media library`);
+                processedArray.push(fileData.id);
               } else {
                 strapi.log.warn(`Failed to download image from array URL ${item}, skipping`);
                 processedArray.push(item);
@@ -359,11 +387,10 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
               strapi.log.error(`Error processing image from array URL ${item}: ${error.message}`);
               processedArray.push(item);
             }
-          }
-          else if (item && typeof item === 'object' && item.url && this.isImageUrl(item.url)) {
+          } else if (item && typeof item === 'object' && item.url && this.isImageUrl(item.url)) {
             try {
               strapi.log.info(`Processing image object from array: ${item.url}`);
-              const fileData = await this.downloadImage(item.url);
+              const fileData = await this.downloadImage(item.url, contentType);
 
               if (fileData && fileData.data) {
                 const caption = item.caption || item.alt || item.name || fileData.name;
@@ -371,21 +398,27 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
 
                 if (uploadedFile && uploadedFile.id) {
                   processedArray.push(uploadedFile.id);
-                  strapi.log.info(`Processed image object URL ${item.url} into media ID ${uploadedFile.id}`);
+                  strapi.log.info(
+                    `Processed image object URL ${item.url} into media ID ${uploadedFile.id}`
+                  );
                 } else {
                   strapi.log.warn(`Failed to upload image from object ${item.url}, skipping`);
                   processedArray.push(item);
                 }
+              } else if (fileData && fileData.alreadyExists) {
+                strapi.log.info(`Image ${fileData.name} already exists in strapi media library`);
+                processedArray.push(fileData.id);
               } else {
                 strapi.log.warn(`Failed to download image from object ${item.url}, skipping`);
                 processedArray.push(item);
               }
             } catch (error) {
-              strapi.log.error(`Error processing image object from array ${item.url}: ${error.message}`);
+              strapi.log.error(
+                `Error processing image object from array ${item.url}: ${error.message}`
+              );
               processedArray.push(item);
             }
-          }
-          else {
+          } else {
             processedArray.push(item); // Keep original if not a valid image
           }
         }
@@ -394,7 +427,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       }
       // Handle special case for object with url property that might be an image
       else if (value && typeof value === 'object') {
-        strapi.log.info("Inside Cond 2, for....", {key})
+        strapi.log.info('Inside Cond 2, for....', { key });
         // Check if the object has a URL property that might be an image
         const objWithUrl = value as {
           url?: string;
@@ -410,7 +443,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
         ) {
           try {
             strapi.log.info(`Processing image URL from object: ${objWithUrl.url}`);
-            const fileData = await this.downloadImage(objWithUrl.url);
+            const fileData = await this.downloadImage(objWithUrl.url, contentType);
 
             // If download was successful, try to upload
             if (fileData && fileData.data) {
@@ -442,10 +475,9 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
           }
         } else {
           // Recursively process nested objects
-          result[key] = await this.processObjectForImages(value);
+          result[key] = await this.processObjectForImages(value, contentType);
         }
       }
-      
     }
 
     return result;
@@ -493,7 +525,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
         try {
           // First check for images and process them
           strapi.log.info(`Processing record ${recordIndex} for images`);
-          const processedRecord = await this.processObjectForImages(record);
+          const processedRecord = await this.processObjectForImages(record, contentType);
 
           // Create the content type entry with processed image references
           strapi.log.info(`Creating content type ${contentType} entry with processed data`);
