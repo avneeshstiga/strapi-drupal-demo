@@ -357,11 +357,17 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async generateSchemaFromDrupal(ctx) {
     try {
-      const { baseUrl, endpoint, params } = ctx.request.body;
+      const { baseUrl, endpoint, params, file = true } = ctx.request.body;
       if (!baseUrl || !endpoint) {
         return ctx.badRequest('baseUrl and endpoint are required in the request body');
       }
       const agent = new https.Agent({ rejectUnauthorized: false });
+
+      // Create language component if we're creating files
+      let languageComponentCreated = false;
+      if (file) {
+        languageComponentCreated = await this.createLanguageComponent();
+      }
 
       // Fetch data for the main entity
       const parentData = await this.fetchDrupalEntityData(baseUrl, endpoint, params, agent);
@@ -432,11 +438,17 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
                   // Convert entity type to kebab case for file naming
                   const contentTypeName = entityType.replace(/_/g, '-');
 
-                  // Create schema file for the related entity
-                  const schemaPath = await this.createSchemaFile(contentTypeName, relSchema);
+                  let schemaPath = null;
+                  let apiFiles = null;
 
-                  // Create controller, routes, and services files
-                  const apiFiles = await this.createAPIFiles(contentTypeName);
+                  // Only create physical files if file parameter is true
+                  if (file) {
+                    // Create schema file for the related entity
+                    schemaPath = await this.createSchemaFile(contentTypeName, relSchema);
+
+                    // Create controller, routes, and services files
+                    apiFiles = await this.createAPIFiles(contentTypeName);
+                  }
 
                   createdFiles.related.push({
                     name: contentTypeName,
@@ -489,11 +501,17 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
                   // Convert entity type to kebab case for file naming
                   const contentTypeName = entityType.replace(/_/g, '-');
 
-                  // Create schema file for the related entity
-                  const schemaPath = await this.createSchemaFile(contentTypeName, relSchema);
+                  let schemaPath = null;
+                  let apiFiles = null;
 
-                  // Create controller, routes, and services files
-                  const apiFiles = await this.createAPIFiles(contentTypeName);
+                  // Only create physical files if file parameter is true
+                  if (file) {
+                    // Create schema file for the related entity
+                    schemaPath = await this.createSchemaFile(contentTypeName, relSchema);
+
+                    // Create controller, routes, and services files
+                    apiFiles = await this.createAPIFiles(contentTypeName);
+                  }
 
                   createdFiles.related.push({
                     name: contentTypeName,
@@ -575,11 +593,17 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       // Add endpoint information to parent schema
       parentSchema.info.drupalEndpoint = endpoint;
 
-      // Create parent schema file
-      const parentSchemaPath = await this.createSchemaFile(parentContentTypeName, parentSchema);
+      let parentSchemaPath = null;
+      let parentApiFiles = null;
 
-      // Create controller, routes, and services files for parent content type
-      const parentApiFiles = await this.createAPIFiles(parentContentTypeName);
+      // Only create physical files if file parameter is true
+      if (file) {
+        // Create parent schema file
+        parentSchemaPath = await this.createSchemaFile(parentContentTypeName, parentSchema);
+
+        // Create controller, routes, and services files for parent content type
+        parentApiFiles = await this.createAPIFiles(parentContentTypeName);
+      }
 
       createdFiles.parent = {
         name: parentContentTypeName,
@@ -587,13 +611,31 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
         apiFiles: parentApiFiles,
       };
 
-      // Return information about created schema files
-      ctx.send({
+      // Determine the response message based on file creation
+      const successMessage = file
+        ? 'Schema files and API routes created successfully. Please restart Strapi to apply changes.'
+        : 'Schema generated successfully without creating files.';
+
+      // If not creating files, include the schema in the response
+      const response = {
         success: true,
-        message:
-          'Schema files and API routes created successfully. Please restart Strapi to apply changes.',
-        createdFiles,
-      });
+        message: successMessage,
+      };
+
+      if (file) {
+        response['createdFiles'] = createdFiles;
+      } else {
+        response['schemas'] = {
+          parent: parentSchema,
+          related: Object.keys(relatedSchemas).reduce((acc, key) => {
+            acc[key] = relatedSchemas[key].schema;
+            return acc;
+          }, {}),
+        };
+      }
+
+      // Return information about created schemas
+      ctx.send(response);
     } catch (error) {
       strapi.log.error(`generateSchemaFromDrupal error: ${error.message}`);
       return ctx.badRequest(error.message || 'Error generating schema from Drupal');
@@ -709,12 +751,39 @@ export default factories.createCoreService('api::${contentTypeName}.${contentTyp
 
   // Helper method to fetch entity data from Drupal
   async fetchDrupalEntityData(baseUrl, endpoint, params, agent) {
-    const url = `${baseUrl.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
     try {
-      const response = await axios.get(url, { params, httpsAgent: agent });
+      // Ensure trailing slashes are handled properly
+      const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+      const normalizedEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+
+      // Construct the full URL
+      const url = `${normalizedBaseUrl}${normalizedEndpoint}`;
+
+      strapi.log.info(`Fetching data from Drupal: ${url}`);
+
+      // Make the request
+      const response = await axios.get(url, {
+        params,
+        httpsAgent: agent,
+        headers: {
+          Accept: 'application/vnd.api+json',
+          'Content-Type': 'application/vnd.api+json',
+        },
+      });
+
+      // Check for successful response
+      if (response.status !== 200) {
+        throw new Error(`Received status code ${response.status} from Drupal API`);
+      }
+
+      // Extract and return data
       return response.data && response.data.data ? response.data.data : [];
     } catch (err) {
       strapi.log.error(`Error fetching from Drupal endpoint ${endpoint}: ${err.message}`);
+      if (err.response) {
+        strapi.log.error(`Response data: ${JSON.stringify(err.response.data)}`);
+        strapi.log.error(`Response status: ${err.response.status}`);
+      }
       throw err;
     }
   },
@@ -776,8 +845,14 @@ export default factories.createCoreService('api::${contentTypeName}.${contentTyp
         schema.attributes[mappedKey] = { type: 'string' };
       } else if (mappedKey === 'description') {
         schema.attributes[mappedKey] = { type: 'blocks' };
-      } else if (mappedKey === 'language') {
-        schema.attributes[mappedKey] = { type: 'string' };
+      } else if (mappedKey === 'language' || key === 'langcode') {
+        // Set up language as a component reference
+        schema.attributes[mappedKey] = {
+          type: 'component',
+          repeatable: false,
+          component: 'shared.language',
+          required: true,
+        };
       } else if (mappedKey === 'published') {
         schema.attributes[mappedKey] = { type: 'boolean' };
       } else if (typeof value === 'string') {
@@ -806,6 +881,54 @@ export default factories.createCoreService('api::${contentTypeName}.${contentTyp
     };
 
     return schema;
+  },
+
+  // Helper method to create language component
+  async createLanguageComponent() {
+    try {
+      // Create component directory structure
+      const componentDir = path.join(strapi.dirs.app.root, 'src', 'components', 'shared');
+
+      // Define the component path
+      const componentPath = path.join(componentDir, 'language.json');
+
+      // Check if component already exists
+      if (await fs.pathExists(componentPath)) {
+        strapi.log.info(`Language component already exists at ${componentPath}`);
+        return true;
+      }
+
+      // Ensure component directory exists
+      await fs.ensureDir(componentDir);
+
+      // Define language component schema
+      const languageComponent = {
+        collectionName: 'components_shared_languages',
+        info: {
+          displayName: 'Language',
+          icon: 'globe',
+          description: 'Language selector component',
+        },
+        options: {},
+        attributes: {
+          code: {
+            type: 'enumeration',
+            enum: ['en', 'hi', 'sv'],
+            default: 'en',
+            required: true,
+          },
+        },
+      };
+
+      // Write component to file
+      await fs.writeJson(componentPath, languageComponent, { spaces: 2 });
+
+      strapi.log.info(`Created language component at ${componentPath}`);
+      return true;
+    } catch (error) {
+      strapi.log.error(`Error creating language component: ${error.message}`);
+      return false;
+    }
   },
 });
 

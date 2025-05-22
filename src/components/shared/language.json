@@ -1,0 +1,21 @@
+{
+  "collectionName": "components_shared_languages",
+  "info": {
+    "displayName": "Language",
+    "icon": "globe",
+    "description": "Language selector component"
+  },
+  "options": {},
+  "attributes": {
+    "code": {
+      "type": "enumeration",
+      "enum": [
+        "en",
+        "hi",
+        "sv"
+      ],
+      "default": "en",
+      "required": true
+    }
+  }
+}
