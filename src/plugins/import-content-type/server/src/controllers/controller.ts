@@ -434,9 +434,14 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
                   // Create schema file for the related entity
                   const schemaPath = await this.createSchemaFile(contentTypeName, relSchema);
+
+                  // Create controller, routes, and services files
+                  const apiFiles = await this.createAPIFiles(contentTypeName);
+
                   createdFiles.related.push({
                     name: contentTypeName,
                     path: schemaPath,
+                    apiFiles,
                   });
 
                   // Store the schema for reference
@@ -486,9 +491,14 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
                   // Create schema file for the related entity
                   const schemaPath = await this.createSchemaFile(contentTypeName, relSchema);
+
+                  // Create controller, routes, and services files
+                  const apiFiles = await this.createAPIFiles(contentTypeName);
+
                   createdFiles.related.push({
                     name: contentTypeName,
                     path: schemaPath,
+                    apiFiles,
                   });
 
                   // Store the schema for reference
@@ -567,20 +577,108 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
       // Create parent schema file
       const parentSchemaPath = await this.createSchemaFile(parentContentTypeName, parentSchema);
+
+      // Create controller, routes, and services files for parent content type
+      const parentApiFiles = await this.createAPIFiles(parentContentTypeName);
+
       createdFiles.parent = {
         name: parentContentTypeName,
         path: parentSchemaPath,
+        apiFiles: parentApiFiles,
       };
 
       // Return information about created schema files
       ctx.send({
         success: true,
-        message: 'Schema files created successfully. Please restart Strapi to apply changes.',
+        message:
+          'Schema files and API routes created successfully. Please restart Strapi to apply changes.',
         createdFiles,
       });
     } catch (error) {
       strapi.log.error(`generateSchemaFromDrupal error: ${error.message}`);
       return ctx.badRequest(error.message || 'Error generating schema from Drupal');
+    }
+  },
+
+  // Helper method to create controller, routes, and services files for a content type
+  async createAPIFiles(contentTypeName) {
+    const createdFiles = {
+      controller: null,
+      routes: null,
+      services: null,
+    };
+
+    try {
+      // Create controller file
+      const controllerDir = path.join(
+        strapi.dirs.app.root,
+        'src',
+        'api',
+        contentTypeName,
+        'controllers'
+      );
+
+      await fs.ensureDir(controllerDir);
+
+      const controllerPath = path.join(controllerDir, `${contentTypeName}.ts`);
+      const controllerContent = `/**
+ *  ${contentTypeName} controller
+ */
+
+import { factories } from '@strapi/strapi';
+
+export default factories.createCoreController('api::${contentTypeName}.${contentTypeName}');
+`;
+
+      await fs.writeFile(controllerPath, controllerContent);
+      createdFiles.controller = controllerPath;
+
+      // Create routes file
+      const routesDir = path.join(strapi.dirs.app.root, 'src', 'api', contentTypeName, 'routes');
+
+      await fs.ensureDir(routesDir);
+
+      const routesPath = path.join(routesDir, `${contentTypeName}.ts`);
+      const routesContent = `/**
+ * ${contentTypeName} router
+ */
+
+import { factories } from '@strapi/strapi';
+
+export default factories.createCoreRouter('api::${contentTypeName}.${contentTypeName}');
+`;
+
+      await fs.writeFile(routesPath, routesContent);
+      createdFiles.routes = routesPath;
+
+      // Create services file
+      const servicesDir = path.join(
+        strapi.dirs.app.root,
+        'src',
+        'api',
+        contentTypeName,
+        'services'
+      );
+
+      await fs.ensureDir(servicesDir);
+
+      const servicesPath = path.join(servicesDir, `${contentTypeName}.ts`);
+      const servicesContent = `/**
+ * ${contentTypeName} service
+ */
+
+import { factories } from '@strapi/strapi';
+
+export default factories.createCoreService('api::${contentTypeName}.${contentTypeName}');
+`;
+
+      await fs.writeFile(servicesPath, servicesContent);
+      createdFiles.services = servicesPath;
+
+      return createdFiles;
+    } catch (error) {
+      strapi.log.error(`Error creating API files for ${contentTypeName}: ${error.message}`);
+      return createdFiles;
     }
   },
 
