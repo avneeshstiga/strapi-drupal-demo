@@ -2,6 +2,8 @@ import type { Core } from '@strapi/strapi';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import axios from 'axios';
+import https from 'https';
 
 const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
   index(ctx) {
@@ -267,6 +269,40 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
     } catch (error) {
       strapi.log.error(`Local file import error: ${error.message}`);
       return ctx.badRequest(error.message || 'Error importing from local file');
+    }
+  },
+
+  async fetchDrupalData(ctx) {
+    try {
+      const { baseUrl, endpoint, params } = ctx.request.body;
+      if (!baseUrl || !endpoint) {
+        return ctx.badRequest('baseUrl and endpoint are required in the request body');
+      }
+      let page = 0;
+      let allResults = [];
+      let keepFetching = true;
+      while (keepFetching) {
+        const url = `${baseUrl.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
+        const queryParams = { ...params, page: { limit: 50, offset: page * 50 } };
+        const agent = new https.Agent({ rejectUnauthorized: false });
+        try {
+          const response = await axios.get(url, { params: queryParams, httpsAgent: agent });
+          const data = response.data && response.data.data ? response.data.data : [];
+          if (Array.isArray(data) && data.length > 0) {
+            allResults = allResults.concat(data);
+            page++;
+          } else {
+            keepFetching = false;
+          }
+        } catch (err) {
+          strapi.log.error(`Error fetching from Drupal: ${err.message}`);
+          return ctx.badRequest(`Error fetching from Drupal: ${err.message}`);
+        }
+      }
+      ctx.send({ success: true, count: allResults.length, data: allResults });
+    } catch (error) {
+      strapi.log.error(`fetchDrupalData error: ${error.message}`);
+      return ctx.badRequest(error.message || 'Error fetching from Drupal');
     }
   },
 });
