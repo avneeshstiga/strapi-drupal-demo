@@ -666,7 +666,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
         }
       }
 
-      // Optionally, include the original Drupal id for reference
+      // Only add drupal_id for reference, do not include any other Drupal keys
       strapiItem['drupal_id'] = item.id;
 
       return strapiItem;

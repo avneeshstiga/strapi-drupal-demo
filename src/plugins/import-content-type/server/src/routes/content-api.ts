@@ -62,4 +62,13 @@ export default [
       auth: false, // Make this endpoint public
     },
   },
+  {
+    method: 'POST',
+    path: '/generate-schema-from-drupal',
+    handler: 'controller.generateSchemaFromDrupal',
+    config: {
+      policies: [],
+      auth: false, // Make this endpoint public
+    },
+  },
 ];

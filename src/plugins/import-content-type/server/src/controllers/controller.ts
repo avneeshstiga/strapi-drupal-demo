@@ -301,8 +301,15 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async fetchDrupalData(ctx) {
     try {
-      const { baseUrl, endpoint, params, contentType, fieldsMapping, relationsMapping } =
-        ctx.request.body;
+      const {
+        baseUrl,
+        endpoint,
+        params,
+        contentType,
+        fieldsMapping,
+        relationsMapping,
+        strapiData,
+      } = ctx.request.body;
       if (!baseUrl || !endpoint) {
         return ctx.badRequest('baseUrl and endpoint are required in the request body');
       }
@@ -330,7 +337,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       }
 
       // If strapi param is true, transform the data
-      if (params && params.strapi && contentType) {
+      if (strapiData && contentType) {
         const service = strapi.plugin('import-content-type').service('service');
         const transformed = await service.transformDrupalToStrapi(
           contentType,
@@ -345,6 +352,165 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
     } catch (error) {
       strapi.log.error(`fetchDrupalData error: ${error.message}`);
       return ctx.badRequest(error.message || 'Error fetching from Drupal');
+    }
+  },
+
+  async generateSchemaFromDrupal(ctx) {
+    try {
+      const { baseUrl, endpoint, params } = ctx.request.body;
+      if (!baseUrl || !endpoint) {
+        return ctx.badRequest('baseUrl and endpoint are required in the request body');
+      }
+      const agent = new https.Agent({ rejectUnauthorized: false });
+      const url = `${baseUrl.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
+      let response;
+      try {
+        response = await axios.get(url, { params, httpsAgent: agent });
+      } catch (err) {
+        strapi.log.error(`Error fetching from Drupal: ${err.message}`);
+        return ctx.badRequest(`Error fetching from Drupal: ${err.message}`);
+      }
+      const data = response.data && response.data.data ? response.data.data : [];
+      if (!Array.isArray(data) || data.length === 0) {
+        return ctx.badRequest('No data found in Drupal response');
+      }
+      // Use the first item to infer schema
+      const item = data[0];
+      const attributes = item.attributes || {};
+      const relationships = item.relationships || {};
+      const unwantedKeys = [
+        'drupal_internal__tid',
+        'drupal_internal__revision_id',
+        'revision_created',
+        'revision_log_message',
+        'revision_translation_affected',
+        'content_translation_source',
+        'content_translation_created',
+        'content_translation_outdated',
+        'weight',
+        'changed',
+      ];
+      const schema = {
+        kind: 'collectionType',
+        collectionName: endpoint.replace(/\//g, '_'),
+        info: {
+          singularName: endpoint.split('/').pop(),
+          pluralName: endpoint.split('/').pop() + 's',
+          displayName: endpoint.split('/').pop().replace(/_/g, ' '),
+          description: `Imported from Drupal 8: ${endpoint}`,
+        },
+        options: {
+          draftAndPublish: true,
+        },
+        pluginOptions: {},
+        attributes: {},
+      };
+      // Infer field types, skipping unwanted keys and mapping langcode/status and custom field renames
+      for (const [key, value] of Object.entries(attributes)) {
+        if (unwantedKeys.includes(key)) continue;
+        let mappedKey = key;
+        if (key === 'langcode') {
+          mappedKey = 'language';
+        } else if (key === 'status') {
+          mappedKey = 'published';
+        } else if (key === 'field_state_highlight') {
+          mappedKey = 'highlight';
+        } else if (key === 'field_taxonomy_pim_id') {
+          mappedKey = 'taxonomy_pim_id';
+        }
+        if (mappedKey === 'description') {
+          schema.attributes[mappedKey] = { type: 'blocks' };
+        } else if (mappedKey === 'language') {
+          schema.attributes[mappedKey] = { type: 'string' };
+        } else if (mappedKey === 'published') {
+          schema.attributes[mappedKey] = { type: 'boolean' };
+        } else if (typeof value === 'string') {
+          schema.attributes[mappedKey] = { type: 'string' };
+        } else if (typeof value === 'number') {
+          schema.attributes[mappedKey] = { type: 'integer' };
+        } else if (typeof value === 'boolean') {
+          schema.attributes[mappedKey] = { type: 'boolean' };
+        } else if (value instanceof Date) {
+          schema.attributes[mappedKey] = { type: 'datetime' };
+        } else if (Array.isArray(value)) {
+          schema.attributes[mappedKey] = { type: 'json' };
+        } else if (typeof value === 'object' && value !== null) {
+          schema.attributes[mappedKey] = { type: 'json' };
+        } else {
+          schema.attributes[mappedKey] = { type: 'string' };
+        }
+      }
+      // Infer relationships
+      for (const [relKey, relValue] of Object.entries(relationships)) {
+        if (relValue && typeof relValue === 'object' && 'data' in relValue) {
+          const relData = (relValue as any).data;
+          if (Array.isArray(relData)) {
+            schema.attributes[relKey] = {
+              type: 'relation',
+              relation: 'oneToMany',
+              target: relData[0]?.type ? `api::${relData[0].type.replace(/--/g, '.')}` : 'unknown',
+            };
+          } else if (relData && typeof relData === 'object' && 'type' in relData) {
+            schema.attributes[relKey] = {
+              type: 'relation',
+              relation: 'manyToOne',
+              target: `api::${relData.type.replace(/--/g, '.')}`,
+            };
+          }
+        }
+      }
+      ctx.send({ ...schema });
+      // for (const [relKey, relValue] of Object.entries(relationships)) {
+      //   if (relValue && typeof relValue === 'object' && 'data' in relValue) {
+      //     const relData = (relValue as any).data;
+      //     if (Array.isArray(relData)) {
+      //       schema.attributes[relKey] = {
+      //         type: 'relation',
+      //         relation: 'oneToMany',
+      //         target: relData[0]?.type ? `api::${relData[0].type.replace(/--/g, '.')}` : 'unknown',
+      //       };
+      //     } else if (relData && typeof relData === 'object' && 'type' in relData) {
+      //       schema.attributes[relKey] = {
+      //         type: 'relation',
+      //         relation: 'manyToOne',
+      //         target: `api::${relData.type.replace(/--/g, '.')}`,
+      //       };
+      //     }
+      //   }
+      // }
+      // Normalize content type name to kebab-case (replace underscores with dashes)
+      // let contentTypeName = (schema.info.singularName || endpoint.split('/').pop() || '').replace(
+      //   /_/g,
+      //   '-'
+      // );
+      // schema.info.singularName = contentTypeName;
+      // schema.info.pluralName = contentTypeName + 's';
+      // schema.collectionName = contentTypeName + 's';
+
+      // // Capitalize the first letter of each word for displayName
+      // const displayNameRaw = (endpoint.split('/').pop() || '').replace(/_/g, ' ');
+      // const displayName = displayNameRaw.replace(/\b\w/g, (c) => c.toUpperCase());
+      // schema.info.displayName = displayName;
+
+      // const schemaPath = path.join(
+      //   strapi.dirs.app.root,
+      //   'src',
+      //   'api',
+      //   contentTypeName,
+      //   'content-types',
+      //   contentTypeName,
+      //   'schema.json'
+      // );
+      // await fs.ensureDir(path.dirname(schemaPath));
+      // await fs.writeJson(schemaPath, schema, { spaces: 2 });
+      // ctx.send({
+      //   success: true,
+      //   schema,
+      //   message: `Content type '${contentTypeName}' created. Please restart Strapi to apply changes.`,
+      // });
+    } catch (error) {
+      strapi.log.error(`generateSchemaFromDrupal error: ${error.message}`);
+      return ctx.badRequest(error.message || 'Error generating schema from Drupal');
     }
   },
 });
