@@ -797,6 +797,14 @@ export default factories.createCoreService('api::${contentTypeName}.${contentTyp
       }
     }
 
+    // Add the drupal_id field at the end
+    schema.attributes['drupal_id'] = {
+      type: 'string',
+      required: false,
+      unique: true,
+      description: 'Drupal content ID for synchronization',
+    };
+
     return schema;
   },
 });
