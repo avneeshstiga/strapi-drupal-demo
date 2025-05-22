@@ -1,0 +1,111 @@
+[
+  {
+    "type": "taxonomy_term--ac_type",
+    "id": "98db3128-3d37-4b71-b942-7fbc8d7c7ae7",
+    "links": {
+      "self": {
+        "href": "https://bjp.org/jsonapi/taxonomy_term/ac_type/98db3128-3d37-4b71-b942-7fbc8d7c7ae7"
+      }
+    },
+    "attributes": {
+      "drupal_internal__tid": 2396,
+      "drupal_internal__revision_id": 2396,
+      "langcode": "en",
+      "revision_created": 1577092753,
+      "revision_log_message": null,
+      "status": true,
+      "name": "Mekliganj",
+      "description": null,
+      "weight": 0,
+      "changed": 1577092753,
+      "default_langcode": true,
+      "revision_translation_affected": true,
+      "content_translation_source": "und",
+      "content_translation_outdated": false,
+      "content_translation_created": 1577092753,
+      "field_state_highlight": null,
+      "field_taxonomy_pim_id": "4132"
+    },
+    "relationships": {
+      "vid": {
+        "data": {
+          "type": "taxonomy_vocabulary--taxonomy_vocabulary",
+          "id": "352d4af7-772d-4781-8a76-4ed47ed69a4a"
+        },
+        "links": {
+          "related": {
+            "href": "https://bjp.org/jsonapi/taxonomy_term/ac_type/98db3128-3d37-4b71-b942-7fbc8d7c7ae7/vid"
+          },
+          "self": {
+            "href": "https://bjp.org/jsonapi/taxonomy_term/ac_type/98db3128-3d37-4b71-b942-7fbc8d7c7ae7/relationships/vid"
+          }
+        }
+      },
+      "revision_user": {
+        "data": null,
+        "links": {
+          "related": {
+            "href": "https://bjp.org/jsonapi/taxonomy_term/ac_type/98db3128-3d37-4b71-b942-7fbc8d7c7ae7/revision_user"
+          },
+          "self": {
+            "href": "https://bjp.org/jsonapi/taxonomy_term/ac_type/98db3128-3d37-4b71-b942-7fbc8d7c7ae7/relationships/revision_user"
+          }
+        }
+      },
+      "parent": {
+        "data": [
+          {
+            "type": "taxonomy_term--ac_type",
+            "id": "virtual",
+            "meta": {
+              "links": {
+                "help": {
+                  "href": "https://www.drupal.org/docs/8/modules/json-api/core-concepts#virtual",
+                  "meta": {
+                    "about": "Usage and meaning of the 'virtual' resource identifier."
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "links": {
+          "related": {
+            "href": "https://bjp.org/jsonapi/taxonomy_term/ac_type/98db3128-3d37-4b71-b942-7fbc8d7c7ae7/parent"
+          },
+          "self": {
+            "href": "https://bjp.org/jsonapi/taxonomy_term/ac_type/98db3128-3d37-4b71-b942-7fbc8d7c7ae7/relationships/parent"
+          }
+        }
+      },
+      "content_translation_uid": {
+        "data": {
+          "type": "user--user",
+          "id": "a0978338-6b92-47c8-be6a-0c3a95a0612b"
+        },
+        "links": {
+          "related": {
+            "href": "https://bjp.org/jsonapi/taxonomy_term/ac_type/98db3128-3d37-4b71-b942-7fbc8d7c7ae7/content_translation_uid"
+          },
+          "self": {
+            "href": "https://bjp.org/jsonapi/taxonomy_term/ac_type/98db3128-3d37-4b71-b942-7fbc8d7c7ae7/relationships/content_translation_uid"
+          }
+        }
+      },
+      "field_ac_type_state": {
+        "data": {
+          "type": "taxonomy_term--states",
+          "id": "ad0576f7-dac7-431f-bb2f-f820fb903242"
+        },
+        "links": {
+          "related": {
+            "href": "https://bjp.org/jsonapi/taxonomy_term/ac_type/98db3128-3d37-4b71-b942-7fbc8d7c7ae7/field_ac_type_state"
+          },
+          "self": {
+            "href": "https://bjp.org/jsonapi/taxonomy_term/ac_type/98db3128-3d37-4b71-b942-7fbc8d7c7ae7/relationships/field_ac_type_state"
+          }
+        }
+      }
+    }
+  }
+]

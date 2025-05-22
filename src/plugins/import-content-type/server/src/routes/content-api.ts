@@ -46,6 +46,15 @@ export default [
   },
   {
     method: 'POST',
+    path: '/import-v2/:contentType',
+    handler: 'importV2Controller.importData',
+    config: {
+      policies: [],
+      auth: false, // Make this endpoint public
+    },
+  },
+  {
+    method: 'POST',
     path: '/fetch-drupal',
     handler: 'controller.fetchDrupalData',
     config: {
