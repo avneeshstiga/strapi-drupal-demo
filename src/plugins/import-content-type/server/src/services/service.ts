@@ -544,6 +544,38 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       throw error;
     }
   },
+
+  async transformDrupalToStrapi(
+    contentType,
+    drupalData,
+    fieldsMapping = {},
+    relationsMapping = {}
+  ) {
+    // Map Drupal JSON:API data to Strapi content-type format, including relations
+    return drupalData.map((item) => {
+      const strapiItem: Record<string, any> = {};
+
+      // Map fields
+      for (const [strapiField, drupalField] of Object.entries(fieldsMapping)) {
+        strapiItem[strapiField] = item.attributes?.[drupalField as string];
+      }
+
+      // Map relationships
+      for (const [strapiRel, drupalRel] of Object.entries(relationsMapping)) {
+        const relData = item.relationships?.[drupalRel as string]?.data;
+        if (Array.isArray(relData)) {
+          strapiItem[strapiRel] = relData.map((rel: any) => rel.id);
+        } else if (relData && relData.id) {
+          strapiItem[strapiRel] = relData.id;
+        }
+      }
+
+      // Optionally, include the original Drupal id for reference
+      strapiItem['drupal_id'] = item.id;
+
+      return strapiItem;
+    });
+  },
 });
 
 export default service;
