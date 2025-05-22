@@ -274,17 +274,19 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async fetchDrupalData(ctx) {
     try {
-      const { baseUrl, endpoint, params } = ctx.request.body;
+      const { baseUrl, endpoint, params, contentType, fieldsMapping, relationsMapping } =
+        ctx.request.body;
       if (!baseUrl || !endpoint) {
         return ctx.badRequest('baseUrl and endpoint are required in the request body');
       }
       let page = 0;
       let allResults = [];
       let keepFetching = true;
+      const agent = new https.Agent({ rejectUnauthorized: false });
+
       while (keepFetching) {
         const url = `${baseUrl.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
         const queryParams = { ...params, page: { limit: 50, offset: page * 50 } };
-        const agent = new https.Agent({ rejectUnauthorized: false });
         try {
           const response = await axios.get(url, { params: queryParams, httpsAgent: agent });
           const data = response.data && response.data.data ? response.data.data : [];
@@ -299,6 +301,19 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           return ctx.badRequest(`Error fetching from Drupal: ${err.message}`);
         }
       }
+
+      // If strapi param is true, transform the data
+      if (params && params.strapi && contentType) {
+        const service = strapi.plugin('import-content-type').service('service');
+        const transformed = await service.transformDrupalToStrapi(
+          contentType,
+          allResults,
+          fieldsMapping || {},
+          relationsMapping || {}
+        );
+        return ctx.send({ success: true, count: transformed.length, data: transformed });
+      }
+
       ctx.send({ success: true, count: allResults.length, data: allResults });
     } catch (error) {
       strapi.log.error(`fetchDrupalData error: ${error.message}`);
