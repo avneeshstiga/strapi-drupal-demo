@@ -44,4 +44,13 @@ export default [
       auth: false, // Make this endpoint public
     },
   },
+  {
+    method: 'POST',
+    path: '/fetch-drupal',
+    handler: 'controller.fetchDrupalData',
+    config: {
+      policies: [],
+      auth: false, // Make this endpoint public
+    },
+  },
 ];
