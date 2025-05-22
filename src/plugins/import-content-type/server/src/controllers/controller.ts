@@ -362,20 +362,15 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
         return ctx.badRequest('baseUrl and endpoint are required in the request body');
       }
       const agent = new https.Agent({ rejectUnauthorized: false });
-      const url = `${baseUrl.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
-      let response;
-      try {
-        response = await axios.get(url, { params, httpsAgent: agent });
-      } catch (err) {
-        strapi.log.error(`Error fetching from Drupal: ${err.message}`);
-        return ctx.badRequest(`Error fetching from Drupal: ${err.message}`);
-      }
-      const data = response.data && response.data.data ? response.data.data : [];
-      if (!Array.isArray(data) || data.length === 0) {
+
+      // Fetch data for the main entity
+      const parentData = await this.fetchDrupalEntityData(baseUrl, endpoint, params, agent);
+      if (!parentData || parentData.length === 0) {
         return ctx.badRequest('No data found in Drupal response');
       }
+
       // Use the first item to infer schema
-      const item = data[0];
+      const item = parentData[0];
       const attributes = item.attributes || {};
       const relationships = item.relationships || {};
       const unwantedKeys = [
@@ -390,128 +385,321 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
         'weight',
         'changed',
       ];
-      const schema = {
-        kind: 'collectionType',
-        collectionName: endpoint.replace(/\//g, '_'),
-        info: {
-          singularName: endpoint.split('/').pop(),
-          pluralName: endpoint.split('/').pop() + 's',
-          displayName: endpoint.split('/').pop().replace(/_/g, ' '),
-          description: `Imported from Drupal 8: ${endpoint}`,
-        },
-        options: {
-          draftAndPublish: true,
-        },
-        pluginOptions: {},
-        attributes: {},
-      };
-      // Infer field types, skipping unwanted keys and mapping langcode/status and custom field renames
-      for (const [key, value] of Object.entries(attributes)) {
-        if (unwantedKeys.includes(key)) continue;
-        let mappedKey = key;
-        if (key === 'langcode') {
-          mappedKey = 'language';
-        } else if (key === 'status') {
-          mappedKey = 'published';
-        } else if (key === 'field_state_highlight') {
-          mappedKey = 'highlight';
-        } else if (key === 'field_taxonomy_pim_id') {
-          mappedKey = 'taxonomy_pim_id';
-        }
-        if (mappedKey === 'description') {
-          schema.attributes[mappedKey] = { type: 'blocks' };
-        } else if (mappedKey === 'language') {
-          schema.attributes[mappedKey] = { type: 'string' };
-        } else if (mappedKey === 'published') {
-          schema.attributes[mappedKey] = { type: 'boolean' };
-        } else if (typeof value === 'string') {
-          schema.attributes[mappedKey] = { type: 'string' };
-        } else if (typeof value === 'number') {
-          schema.attributes[mappedKey] = { type: 'integer' };
-        } else if (typeof value === 'boolean') {
-          schema.attributes[mappedKey] = { type: 'boolean' };
-        } else if (value instanceof Date) {
-          schema.attributes[mappedKey] = { type: 'datetime' };
-        } else if (Array.isArray(value)) {
-          schema.attributes[mappedKey] = { type: 'json' };
-        } else if (typeof value === 'object' && value !== null) {
-          schema.attributes[mappedKey] = { type: 'json' };
-        } else {
-          schema.attributes[mappedKey] = { type: 'string' };
-        }
-      }
-      // Infer relationships
+
+      // Create related schemas collection
+      const relatedSchemas = {};
+      const relationPromises = [];
+      const createdFiles = { related: [], parent: null };
+
+      // STEP 1: First identify and fetch all related entities
       for (const [relKey, relValue] of Object.entries(relationships)) {
+        // Skip the specified relations: parent, vid, and content_translation_uid
+        if (relKey === 'parent' || relKey === 'vid' || relKey === 'content_translation_uid') {
+          continue;
+        }
+
         if (relValue && typeof relValue === 'object' && 'data' in relValue) {
           const relData = (relValue as any).data;
-          if (Array.isArray(relData)) {
-            schema.attributes[relKey] = {
-              type: 'relation',
-              relation: 'oneToMany',
-              target: relData[0]?.type ? `api::${relData[0].type.replace(/--/g, '.')}` : 'unknown',
-            };
+
+          if (Array.isArray(relData) && relData.length > 0 && relData[0]?.type) {
+            // Extract entity type from the relationship
+            const drupalType = relData[0].type;
+            const entityType = drupalType.split('--')[1] || 'unknown';
+
+            // Create a promise to fetch this related entity's data
+            const relPromise = (async () => {
+              try {
+                // Fetch data for the related entity
+                const relEntityData = await this.fetchDrupalEntityData(
+                  baseUrl,
+                  entityType,
+                  {},
+                  agent
+                );
+
+                if (relEntityData && relEntityData.length > 0) {
+                  // Create schema for the related entity using its actual data
+                  const relAttributes = relEntityData[0].attributes || {};
+                  const relSchema = this.createEntitySchema(
+                    entityType,
+                    relAttributes,
+                    unwantedKeys
+                  );
+
+                  // Add endpoint information
+                  relSchema.info.drupalEndpoint = entityType;
+
+                  // Convert entity type to kebab case for file naming
+                  const contentTypeName = entityType.replace(/_/g, '-');
+
+                  // Create schema file for the related entity
+                  const schemaPath = await this.createSchemaFile(contentTypeName, relSchema);
+                  createdFiles.related.push({
+                    name: contentTypeName,
+                    path: schemaPath,
+                  });
+
+                  // Store the schema for reference
+                  relatedSchemas[entityType] = {
+                    schema: relSchema,
+                    contentTypeName: contentTypeName,
+                  };
+                }
+              } catch (err) {
+                strapi.log.warn(
+                  `Could not create schema for related entity ${entityType}: ${err.message}`
+                );
+              }
+            })();
+
+            relationPromises.push(relPromise);
           } else if (relData && typeof relData === 'object' && 'type' in relData) {
-            schema.attributes[relKey] = {
-              type: 'relation',
-              relation: 'manyToOne',
-              target: `api::${relData.type.replace(/--/g, '.')}`,
-            };
+            // Extract entity type from the relationship
+            const drupalType = relData.type;
+            const entityType = drupalType.split('--')[1] || 'unknown';
+
+            // Create a promise to fetch this related entity's data
+            const relPromise = (async () => {
+              try {
+                // Fetch data for the related entity
+                const relEntityData = await this.fetchDrupalEntityData(
+                  baseUrl,
+                  entityType,
+                  {},
+                  agent
+                );
+
+                if (relEntityData && relEntityData.length > 0) {
+                  // Create schema for the related entity using its actual data
+                  const relAttributes = relEntityData[0].attributes || {};
+                  const relSchema = this.createEntitySchema(
+                    entityType,
+                    relAttributes,
+                    unwantedKeys
+                  );
+
+                  // Add endpoint information
+                  relSchema.info.drupalEndpoint = entityType;
+
+                  // Convert entity type to kebab case for file naming
+                  const contentTypeName = entityType.replace(/_/g, '-');
+
+                  // Create schema file for the related entity
+                  const schemaPath = await this.createSchemaFile(contentTypeName, relSchema);
+                  createdFiles.related.push({
+                    name: contentTypeName,
+                    path: schemaPath,
+                  });
+
+                  // Store the schema for reference
+                  relatedSchemas[entityType] = {
+                    schema: relSchema,
+                    contentTypeName: contentTypeName,
+                  };
+                }
+              } catch (err) {
+                strapi.log.warn(
+                  `Could not create schema for related entity ${entityType}: ${err.message}`
+                );
+              }
+            })();
+
+            relationPromises.push(relPromise);
           }
         }
       }
-      ctx.send({ ...schema });
-      // for (const [relKey, relValue] of Object.entries(relationships)) {
-      //   if (relValue && typeof relValue === 'object' && 'data' in relValue) {
-      //     const relData = (relValue as any).data;
-      //     if (Array.isArray(relData)) {
-      //       schema.attributes[relKey] = {
-      //         type: 'relation',
-      //         relation: 'oneToMany',
-      //         target: relData[0]?.type ? `api::${relData[0].type.replace(/--/g, '.')}` : 'unknown',
-      //       };
-      //     } else if (relData && typeof relData === 'object' && 'type' in relData) {
-      //       schema.attributes[relKey] = {
-      //         type: 'relation',
-      //         relation: 'manyToOne',
-      //         target: `api::${relData.type.replace(/--/g, '.')}`,
-      //       };
-      //     }
-      //   }
-      // }
-      // Normalize content type name to kebab-case (replace underscores with dashes)
-      // let contentTypeName = (schema.info.singularName || endpoint.split('/').pop() || '').replace(
-      //   /_/g,
-      //   '-'
-      // );
-      // schema.info.singularName = contentTypeName;
-      // schema.info.pluralName = contentTypeName + 's';
-      // schema.collectionName = contentTypeName + 's';
 
-      // // Capitalize the first letter of each word for displayName
-      // const displayNameRaw = (endpoint.split('/').pop() || '').replace(/_/g, ' ');
-      // const displayName = displayNameRaw.replace(/\b\w/g, (c) => c.toUpperCase());
-      // schema.info.displayName = displayName;
+      // Wait for all relation schema files to be created
+      await Promise.all(relationPromises);
 
-      // const schemaPath = path.join(
-      //   strapi.dirs.app.root,
-      //   'src',
-      //   'api',
-      //   contentTypeName,
-      //   'content-types',
-      //   contentTypeName,
-      //   'schema.json'
-      // );
-      // await fs.ensureDir(path.dirname(schemaPath));
-      // await fs.writeJson(schemaPath, schema, { spaces: 2 });
-      // ctx.send({
-      //   success: true,
-      //   schema,
-      //   message: `Content type '${contentTypeName}' created. Please restart Strapi to apply changes.`,
-      // });
+      // STEP 2: Now create the parent schema AFTER all related schemas are created
+      const parentSchema = this.createEntitySchema(endpoint, attributes, unwantedKeys);
+      const parentContentTypeName = endpoint.split('/').pop().replace(/_/g, '-');
+
+      // Add relations to the parent schema
+      for (const [relKey, relValue] of Object.entries(relationships)) {
+        // Skip the specified relations: parent, vid, and content_translation_uid
+        if (relKey === 'parent' || relKey === 'vid' || relKey === 'content_translation_uid') {
+          continue;
+        }
+
+        if (relValue && typeof relValue === 'object' && 'data' in relValue) {
+          const relData = (relValue as any).data;
+
+          if (Array.isArray(relData) && relData.length > 0 && relData[0]?.type) {
+            // Extract entity type from the relationship
+            const entityType = relData[0].type.split('--')[1] || 'unknown';
+
+            // Use the entity type as the key name for the relation
+            if (relatedSchemas[entityType]) {
+              // Get the kebab-case name used for the content type
+              const relContentTypeName = relatedSchemas[entityType].contentTypeName;
+
+              // Properly format the relation target using full Strapi relation format
+              parentSchema.attributes[entityType] = {
+                type: 'relation',
+                relation: 'oneToMany',
+                target: `api::${relContentTypeName}.${relContentTypeName}`,
+              };
+            }
+          } else if (relData && typeof relData === 'object' && 'type' in relData) {
+            // Extract entity type from the relationship
+            const entityType = relData.type.split('--')[1] || 'unknown';
+
+            // Use the entity type as the key name for the relation
+            if (relatedSchemas[entityType]) {
+              // Get the kebab-case name used for the content type
+              const relContentTypeName = relatedSchemas[entityType].contentTypeName;
+
+              // Properly format the relation target using full Strapi relation format
+              parentSchema.attributes[entityType] = {
+                type: 'relation',
+                relation: 'manyToOne',
+                target: `api::${relContentTypeName}.${relContentTypeName}`,
+              };
+            }
+          }
+        }
+      }
+
+      // Add endpoint information to parent schema
+      parentSchema.info.drupalEndpoint = endpoint;
+
+      // Create parent schema file
+      const parentSchemaPath = await this.createSchemaFile(parentContentTypeName, parentSchema);
+      createdFiles.parent = {
+        name: parentContentTypeName,
+        path: parentSchemaPath,
+      };
+
+      // Return information about created schema files
+      ctx.send({
+        success: true,
+        message: 'Schema files created successfully. Please restart Strapi to apply changes.',
+        createdFiles,
+      });
     } catch (error) {
       strapi.log.error(`generateSchemaFromDrupal error: ${error.message}`);
       return ctx.badRequest(error.message || 'Error generating schema from Drupal');
     }
+  },
+
+  // Helper method to create schema.json file
+  async createSchemaFile(contentTypeName, schema) {
+    // Ensure content type name is in kebab-case
+    contentTypeName = contentTypeName.replace(/_/g, '-');
+
+    // Create path to schema file
+    const schemaPath = path.join(
+      strapi.dirs.app.root,
+      'src',
+      'api',
+      contentTypeName,
+      'content-types',
+      contentTypeName,
+      'schema.json'
+    );
+
+    // Ensure directory exists
+    await fs.ensureDir(path.dirname(schemaPath));
+
+    // Write schema to file
+    await fs.writeJson(schemaPath, schema, { spaces: 2 });
+
+    return schemaPath;
+  },
+
+  // Helper method to fetch entity data from Drupal
+  async fetchDrupalEntityData(baseUrl, endpoint, params, agent) {
+    const url = `${baseUrl.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
+    try {
+      const response = await axios.get(url, { params, httpsAgent: agent });
+      return response.data && response.data.data ? response.data.data : [];
+    } catch (err) {
+      strapi.log.error(`Error fetching from Drupal endpoint ${endpoint}: ${err.message}`);
+      throw err;
+    }
+  },
+
+  // Helper method to create an entity schema
+  createEntitySchema(endpoint, attributes, unwantedKeys) {
+    // Get base name from endpoint
+    const baseName = endpoint.split('/').pop();
+
+    // Format names properly:
+    // 1. Replace underscores with hyphens for singularName and pluralName
+    const singularName = baseName.replace(/_/g, '-');
+    const pluralName = singularName + 's';
+
+    // 2. Capitalize first letter of each word in displayName
+    const displayName = baseName
+      .replace(/_/g, ' ')
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+
+    const schema = {
+      kind: 'collectionType',
+      collectionName: endpoint.replace(/\//g, '_'),
+      info: {
+        singularName: singularName,
+        pluralName: pluralName,
+        displayName: displayName,
+        description: `Imported from Drupal 8: ${endpoint}`,
+        drupalEndpoint: '',
+      },
+      options: {
+        draftAndPublish: true,
+      },
+      pluginOptions: {},
+      attributes: {},
+    };
+
+    // Infer field types, skipping unwanted keys and mapping langcode/status and custom field renames
+    for (const [key, value] of Object.entries(attributes)) {
+      if (unwantedKeys.includes(key)) continue;
+
+      // Remove 'field_' prefix from all keys
+      let mappedKey = key.startsWith('field_') ? key.substring(6) : key;
+
+      // Additional specific mappings
+      if (key === 'langcode') {
+        mappedKey = 'language';
+      } else if (key === 'status') {
+        mappedKey = 'published';
+      } else if (key === 'field_state_highlight') {
+        mappedKey = 'highlight';
+      } else if (key === 'field_taxonomy_pim_id') {
+        mappedKey = 'taxonomy_pim_id';
+      }
+
+      // Check if the key contains "_link" - always make it a string type
+      if (key.includes('_link')) {
+        schema.attributes[mappedKey] = { type: 'string' };
+      } else if (mappedKey === 'description') {
+        schema.attributes[mappedKey] = { type: 'blocks' };
+      } else if (mappedKey === 'language') {
+        schema.attributes[mappedKey] = { type: 'string' };
+      } else if (mappedKey === 'published') {
+        schema.attributes[mappedKey] = { type: 'boolean' };
+      } else if (typeof value === 'string') {
+        schema.attributes[mappedKey] = { type: 'string' };
+      } else if (typeof value === 'number') {
+        schema.attributes[mappedKey] = { type: 'integer' };
+      } else if (typeof value === 'boolean') {
+        schema.attributes[mappedKey] = { type: 'boolean' };
+      } else if (value instanceof Date) {
+        schema.attributes[mappedKey] = { type: 'datetime' };
+      } else if (Array.isArray(value)) {
+        schema.attributes[mappedKey] = { type: 'json' };
+      } else if (typeof value === 'object' && value !== null) {
+        schema.attributes[mappedKey] = { type: 'json' };
+      } else {
+        schema.attributes[mappedKey] = { type: 'string' };
+      }
+    }
+
+    return schema;
   },
 });
 
