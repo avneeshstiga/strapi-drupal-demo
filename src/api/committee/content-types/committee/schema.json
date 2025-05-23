@@ -1,0 +1,35 @@
+{
+  "kind": "collectionType",
+  "collectionName": "committees",
+  "info": {
+    "singularName": "committee",
+    "pluralName": "committees",
+    "displayName": "Committees"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "drupal_published": {
+      "type": "boolean"
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "url_alias": {
+      "type": "string"
+    }
+  }
+}

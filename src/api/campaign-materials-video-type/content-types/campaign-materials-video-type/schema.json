@@ -1,0 +1,36 @@
+{
+  "kind": "collectionType",
+  "collectionName": "campaign_materials_video_types",
+  "info": {
+    "singularName": "campaign-materials-video-type",
+    "pluralName": "campaign-materials-video-types",
+    "displayName": "Campaign Materials Video Types",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "drupal_published": {
+      "type": "boolean"
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "url_alias": {
+      "type": "string"
+    }
+  }
+}

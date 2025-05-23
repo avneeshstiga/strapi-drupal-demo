@@ -1,0 +1,43 @@
+{
+  "kind": "collectionType",
+  "collectionName": "article_types",
+  "info": {
+    "singularName": "article-type",
+    "pluralName": "article-types",
+    "displayName": "Article Type",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "taxonomy_pim_id": {
+      "type": "string"
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "url_alias": {
+      "type": "string"
+    },
+    "drupal_published": {
+      "type": "boolean"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "kind": "collectionType",
+  "collectionName": "states",
+  "info": {
+    "singularName": "state",
+    "pluralName": "states",
+    "displayName": "States",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "maxLength": 60
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "url_alias": {
+      "type": "string"
+    },
+    "facebook_link": {
+      "type": "string"
+    },
+    "linkedin_link": {
+      "type": "string"
+    },
+    "pim_id": {
+      "type": "string"
+    },
+    "twitter_link": {
+      "type": "string"
+    },
+    "youtube_link": {
+      "type": "string"
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "drupal_published": {
+      "type": "boolean"
+    }
+  }
+}

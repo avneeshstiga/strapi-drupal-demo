@@ -1,0 +1,33 @@
+{
+  "kind": "collectionType",
+  "collectionName": "common_year_masters",
+  "info": {
+    "singularName": "common-year-master",
+    "pluralName": "common-year-masters",
+    "displayName": "Common Year Master"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "drupal_published": {
+      "type": "boolean"
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "url_alias": {
+      "type": "string"
+    },
+    "taxonomy_pim_id": {
+      "type": "string"
+    }
+  }
+}

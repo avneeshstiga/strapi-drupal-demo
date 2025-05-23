@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "history_of_the_party_years",
+  "info": {
+    "singularName": "history-of-the-party-year",
+    "pluralName": "history-of-the-party-years",
+    "displayName": "History of the party Year"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "drupal_published": {
+      "type": "boolean"
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "url_alias": {
+      "type": "string"
+    }
+  }
+}

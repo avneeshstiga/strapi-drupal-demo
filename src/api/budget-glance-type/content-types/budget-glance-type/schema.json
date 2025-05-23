@@ -1,0 +1,31 @@
+{
+  "kind": "collectionType",
+  "collectionName": "budget_glance_types",
+  "info": {
+    "singularName": "budget-glance-type",
+    "pluralName": "budget-glance-types",
+    "displayName": "Budget Glance Type",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "drupal_published": {
+      "type": "boolean"
+    },
+    "description": {
+      "type": "text"
+    },
+    "url_alias": {
+      "type": "string"
+    }
+  }
+}
