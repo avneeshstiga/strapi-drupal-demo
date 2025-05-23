@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "bjp_live_tags",
+  "info": {
+    "singularName": "bjp-live-tag",
+    "pluralName": "bjp-live-tags",
+    "displayName": "BJP Live Tags"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "Description": {
+      "type": "text"
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "drupal_published": {
+      "type": "boolean"
+    },
+    "url_alias": {
+      "type": "string"
+    }
+  }
+}

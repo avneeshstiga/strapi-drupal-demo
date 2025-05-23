@@ -1,0 +1,113 @@
+{
+  "kind": "collectionType",
+  "collectionName": "bjp_governed_states",
+  "info": {
+    "singularName": "bjp-governed-state",
+    "pluralName": "bjp-governed-states",
+    "displayName": "BJP Governed States",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "maxLength": 60,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      },
+      "required": true
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "domain_url": {
+      "type": "string"
+    },
+    "state_highlight": {
+      "type": "string",
+      "required": true
+    },
+    "historical_monuments": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files"
+      ]
+    },
+    "bjp_governed_state_images": {
+      "type": "media",
+      "multiple": true,
+      "required": true,
+      "allowedTypes": [
+        "images",
+        "files"
+      ],
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "state_website_home_logo": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "state_website_home_logo_hi": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files"
+      ]
+    },
+    "state_website_inner_logo": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files"
+      ]
+    },
+    "state_website_inner_logo_h": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files"
+      ]
+    },
+    "welcome_message_state_home": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "url_alias": {
+      "type": "string"
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "kind": "collectionType",
+  "collectionName": "election_format_types",
+  "info": {
+    "singularName": "election-format-type",
+    "pluralName": "election-format-types",
+    "displayName": "Election Format Type"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "url_alias": {
+      "type": "string"
+    },
+    "drupal_published": {
+      "type": "boolean"
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

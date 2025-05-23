@@ -1,0 +1,38 @@
+{
+  "kind": "collectionType",
+  "collectionName": "department_types",
+  "info": {
+    "singularName": "department-type",
+    "pluralName": "department-types",
+    "displayName": "Department Type"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "drupal_published": {
+      "type": "boolean"
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "url_alias": {
+      "type": "string"
+    },
+    "departnments_image": {
+      "allowedTypes": [
+        "images",
+        "files"
+      ],
+      "type": "media",
+      "multiple": false
+    }
+  }
+}

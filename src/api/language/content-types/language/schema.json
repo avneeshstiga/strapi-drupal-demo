@@ -1,0 +1,32 @@
+{
+  "kind": "collectionType",
+  "collectionName": "languages",
+  "info": {
+    "singularName": "language",
+    "pluralName": "languages",
+    "displayName": "Language",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "booksmonograph_langode": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "drupal_published": {
+      "type": "boolean"
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    }
+  }
+}

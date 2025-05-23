@@ -1,0 +1,52 @@
+{
+  "kind": "collectionType",
+  "collectionName": "ac_types",
+  "info": {
+    "singularName": "ac-type",
+    "pluralName": "ac-types",
+    "displayName": "AC Type",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "state_highlight": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "url_alias": {
+      "type": "string"
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "taxonomy_pim_id": {
+      "type": "string"
+    },
+    "drupal_published": {
+      "type": "boolean"
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "state": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::state.state"
+    }
+  }
+}

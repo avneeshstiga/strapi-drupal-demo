@@ -1,0 +1,35 @@
+{
+  "kind": "collectionType",
+  "collectionName": "campaign_materials_state_photo_types",
+  "info": {
+    "singularName": "campaign-materials-state-photo-type",
+    "pluralName": "campaign-materials-state-photo-types",
+    "displayName": "Campaign Materials State Photo Types"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "drupal_published": {
+      "type": "boolean"
+    },
+    "description": {
+      "type": "text"
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "url_alias": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "kind": "collectionType",
+  "collectionName": "campaign_materials_state_video_types",
+  "info": {
+    "singularName": "campaign-materials-state-video-type",
+    "pluralName": "campaign-materials-state-video-types",
+    "displayName": "Campaign Materials State Video Types"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "drupal_published": {
+      "type": "boolean"
+    },
+    "drupal_id": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    },
+    "url_alias": {
+      "type": "string"
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    }
+  }
+}
