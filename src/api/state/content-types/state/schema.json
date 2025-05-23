@@ -27,19 +27,7 @@
     "url_alias": {
       "type": "string"
     },
-    "facebook_link": {
-      "type": "string"
-    },
-    "linkedin_link": {
-      "type": "string"
-    },
     "pim_id": {
-      "type": "string"
-    },
-    "twitter_link": {
-      "type": "string"
-    },
-    "youtube_link": {
       "type": "string"
     },
     "drupal_id": {
@@ -47,6 +35,24 @@
     },
     "drupal_published": {
       "type": "boolean"
+    },
+    "facebook_link": {
+      "type": "json"
+    },
+    "linkedin_link": {
+      "type": "json"
+    },
+    "youtube_link": {
+      "type": "json"
+    },
+    "twitter_link": {
+      "type": "json"
+    },
+    "ac_types": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::ac-type.ac-type",
+      "mappedBy": "state"
     }
   }
 }
