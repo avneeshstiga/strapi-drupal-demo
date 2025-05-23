@@ -355,6 +355,26 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
+  // Helper method to check if a schema file already exists
+  async schemaExists(contentTypeName) {
+    // Ensure content type name is in kebab-case
+    contentTypeName = contentTypeName.replace(/_/g, '-');
+
+    // Create path to schema file
+    const schemaPath = path.join(
+      strapi.dirs.app.root,
+      'src',
+      'api',
+      contentTypeName,
+      'content-types',
+      contentTypeName,
+      'schema.json'
+    );
+
+    // Check if schema file exists
+    return await fs.pathExists(schemaPath);
+  },
+
   async generateSchemaFromDrupal(ctx) {
     try {
       const { baseUrl, endpoint, params, file = true } = ctx.request.body;
@@ -415,6 +435,33 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             // Create a promise to fetch this related entity's data
             const relPromise = (async () => {
               try {
+                // Convert entity type to kebab case for file naming
+                const contentTypeName = entityType.replace(/_/g, '-');
+
+                // Check if the schema already exists
+                const schemaAlreadyExists = await this.schemaExists(contentTypeName);
+
+                if (schemaAlreadyExists) {
+                  strapi.log.info(
+                    `Schema for ${contentTypeName} already exists. Skipping creation.`
+                  );
+
+                  // Add to relatedSchemas for reference even though we're not creating it
+                  relatedSchemas[entityType] = {
+                    contentTypeName: contentTypeName,
+                    // We'll set schema to null since we're not creating it
+                    schema: null,
+                  };
+
+                  createdFiles.related.push({
+                    name: contentTypeName,
+                    path: `already exists`,
+                    apiFiles: `already exists`,
+                  });
+
+                  return;
+                }
+
                 // Fetch data for the related entity
                 const relEntityData = await this.fetchDrupalEntityData(
                   baseUrl,
@@ -434,9 +481,6 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
                   // Add endpoint information
                   relSchema.info.drupalEndpoint = entityType;
-
-                  // Convert entity type to kebab case for file naming
-                  const contentTypeName = entityType.replace(/_/g, '-');
 
                   let schemaPath = null;
                   let apiFiles = null;
@@ -478,6 +522,33 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             // Create a promise to fetch this related entity's data
             const relPromise = (async () => {
               try {
+                // Convert entity type to kebab case for file naming
+                const contentTypeName = entityType.replace(/_/g, '-');
+
+                // Check if the schema already exists
+                const schemaAlreadyExists = await this.schemaExists(contentTypeName);
+
+                if (schemaAlreadyExists) {
+                  strapi.log.info(
+                    `Schema for ${contentTypeName} already exists. Skipping creation.`
+                  );
+
+                  // Add to relatedSchemas for reference even though we're not creating it
+                  relatedSchemas[entityType] = {
+                    contentTypeName: contentTypeName,
+                    // We'll set schema to null since we're not creating it
+                    schema: null,
+                  };
+
+                  createdFiles.related.push({
+                    name: contentTypeName,
+                    path: `already exists`,
+                    apiFiles: `already exists`,
+                  });
+
+                  return;
+                }
+
                 // Fetch data for the related entity
                 const relEntityData = await this.fetchDrupalEntityData(
                   baseUrl,
@@ -497,9 +568,6 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
                   // Add endpoint information
                   relSchema.info.drupalEndpoint = entityType;
-
-                  // Convert entity type to kebab case for file naming
-                  const contentTypeName = entityType.replace(/_/g, '-');
 
                   let schemaPath = null;
                   let apiFiles = null;
@@ -541,68 +609,80 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       await Promise.all(relationPromises);
 
       // STEP 2: Now create the parent schema AFTER all related schemas are created
-      const parentSchema = this.createEntitySchema(endpoint, attributes, unwantedKeys);
       const parentContentTypeName = endpoint.split('/').pop().replace(/_/g, '-');
 
-      // Add relations to the parent schema
-      for (const [relKey, relValue] of Object.entries(relationships)) {
-        // Skip the specified relations: parent, vid, and content_translation_uid
-        if (relKey === 'parent' || relKey === 'vid' || relKey === 'content_translation_uid') {
-          continue;
-        }
+      // Check if the parent schema already exists
+      const parentSchemaExists = await this.schemaExists(parentContentTypeName);
+      let parentSchemaPath = null;
+      let parentApiFiles = null;
+      let parentSchema = null;
 
-        if (relValue && typeof relValue === 'object' && 'data' in relValue) {
-          const relData = (relValue as any).data;
+      if (parentSchemaExists) {
+        strapi.log.info(
+          `Parent schema for ${parentContentTypeName} already exists. Skipping creation.`
+        );
+        parentSchemaPath = `already exists`;
+        parentApiFiles = `already exists`;
+      } else {
+        parentSchema = this.createEntitySchema(endpoint, attributes, unwantedKeys);
 
-          if (Array.isArray(relData) && relData.length > 0 && relData[0]?.type) {
-            // Extract entity type from the relationship
-            const entityType = relData[0].type.split('--')[1] || 'unknown';
+        // Add relations to the parent schema
+        for (const [relKey, relValue] of Object.entries(relationships)) {
+          // Skip the specified relations: parent, vid, and content_translation_uid
+          if (relKey === 'parent' || relKey === 'vid' || relKey === 'content_translation_uid') {
+            continue;
+          }
 
-            // Use the entity type as the key name for the relation
-            if (relatedSchemas[entityType]) {
-              // Get the kebab-case name used for the content type
-              const relContentTypeName = relatedSchemas[entityType].contentTypeName;
+          if (relValue && typeof relValue === 'object' && 'data' in relValue) {
+            const relData = (relValue as any).data;
 
-              // Properly format the relation target using full Strapi relation format
-              parentSchema.attributes[entityType] = {
-                type: 'relation',
-                relation: 'oneToMany',
-                target: `api::${relContentTypeName}.${relContentTypeName}`,
-              };
-            }
-          } else if (relData && typeof relData === 'object' && 'type' in relData) {
-            // Extract entity type from the relationship
-            const entityType = relData.type.split('--')[1] || 'unknown';
+            if (Array.isArray(relData) && relData.length > 0 && relData[0]?.type) {
+              // Extract entity type from the relationship
+              const entityType = relData[0].type.split('--')[1] || 'unknown';
 
-            // Use the entity type as the key name for the relation
-            if (relatedSchemas[entityType]) {
-              // Get the kebab-case name used for the content type
-              const relContentTypeName = relatedSchemas[entityType].contentTypeName;
+              // Use the entity type as the key name for the relation
+              if (relatedSchemas[entityType]) {
+                // Get the kebab-case name used for the content type
+                const relContentTypeName = relatedSchemas[entityType].contentTypeName;
 
-              // Properly format the relation target using full Strapi relation format
-              parentSchema.attributes[entityType] = {
-                type: 'relation',
-                relation: 'manyToOne',
-                target: `api::${relContentTypeName}.${relContentTypeName}`,
-              };
+                // Properly format the relation target using full Strapi relation format
+                parentSchema.attributes[entityType] = {
+                  type: 'relation',
+                  relation: 'oneToMany',
+                  target: `api::${relContentTypeName}.${relContentTypeName}`,
+                };
+              }
+            } else if (relData && typeof relData === 'object' && 'type' in relData) {
+              // Extract entity type from the relationship
+              const entityType = relData.type.split('--')[1] || 'unknown';
+
+              // Use the entity type as the key name for the relation
+              if (relatedSchemas[entityType]) {
+                // Get the kebab-case name used for the content type
+                const relContentTypeName = relatedSchemas[entityType].contentTypeName;
+
+                // Properly format the relation target using full Strapi relation format
+                parentSchema.attributes[entityType] = {
+                  type: 'relation',
+                  relation: 'manyToOne',
+                  target: `api::${relContentTypeName}.${relContentTypeName}`,
+                };
+              }
             }
           }
         }
-      }
 
-      // Add endpoint information to parent schema
-      parentSchema.info.drupalEndpoint = endpoint;
+        // Add endpoint information to parent schema
+        parentSchema.info.drupalEndpoint = endpoint;
 
-      let parentSchemaPath = null;
-      let parentApiFiles = null;
+        // Only create physical files if file parameter is true
+        if (file) {
+          // Create parent schema file
+          parentSchemaPath = await this.createSchemaFile(parentContentTypeName, parentSchema);
 
-      // Only create physical files if file parameter is true
-      if (file) {
-        // Create parent schema file
-        parentSchemaPath = await this.createSchemaFile(parentContentTypeName, parentSchema);
-
-        // Create controller, routes, and services files for parent content type
-        parentApiFiles = await this.createAPIFiles(parentContentTypeName);
+          // Create controller, routes, and services files for parent content type
+          parentApiFiles = await this.createAPIFiles(parentContentTypeName);
+        }
       }
 
       createdFiles.parent = {
@@ -824,7 +904,12 @@ export default factories.createCoreService('api::${contentTypeName}.${contentTyp
 
     // Infer field types, skipping unwanted keys and mapping langcode/status and custom field renames
     for (const [key, value] of Object.entries(attributes)) {
+      // Skip keys in the unwantedKeys list
       if (unwantedKeys.includes(key)) continue;
+
+      // Skip keys that start with 'drupal_' or 'revision_' or contain 'created'
+      if (key.startsWith('drupal_') || key.startsWith('revision_') || key.includes('created'))
+        continue;
 
       // Remove 'field_' prefix from all keys
       let mappedKey = key.startsWith('field_') ? key.substring(6) : key;
