@@ -1,0 +1,22 @@
+export const findDrupalRelationshipData = async (drupalId: string, strapiRel: string) => {
+  try {
+    strapi.log.info(
+      `--- Finding Drupal relationship data for ${strapiRel} with drupal id ${drupalId} ---`
+    );
+    const data = await strapi.documents(`api::${strapiRel}.${strapiRel}`).findFirst({
+      filters: {
+        drupal_id: {
+          $eqi: drupalId,
+        },
+      },
+    });
+    strapi.log.info(
+      `--- Found Drupal relationship data for ${strapiRel} with strapi id ${data?.id} ---`
+    );
+
+    return data?.id;
+  } catch (error) {
+    strapi.log.error(`Error finding Drupal relationship data: ${error.message}`);
+    return null;
+  }
+};

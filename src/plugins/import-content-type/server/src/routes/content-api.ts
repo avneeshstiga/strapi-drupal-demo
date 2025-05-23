@@ -62,4 +62,13 @@ export default [
       auth: false, // Make this endpoint public
     },
   },
+  {
+    method: 'DELETE',
+    path: '/delete/:contentType',
+    handler: 'controller.deleteContentType',
+    config: {
+      policies: [],
+      auth: false, // Make this endpoint public
+    },
+  },
 ];

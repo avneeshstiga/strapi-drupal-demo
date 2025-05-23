@@ -7,6 +7,7 @@ import os from 'os';
 import FormData from 'form-data'; // Node.js FormData implementation
 import { validateRecordAgainstSchema } from '../utils/validateRecordAgainstSchema';
 import { checkFileExists, checkFolderExists, createFolder } from '../utils/media';
+import { findDrupalRelationshipData } from '../utils/strapi-queries';
 
 const service = ({ strapi }: { strapi: Core.Strapi }) => ({
   getWelcomeMessage() {
@@ -511,7 +512,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
     };
 
     // Process records in batches to avoid overwhelming the database
-    const batchSize = 20; // Reduced batch size for better error handling
+    const batchSize = 10; // Reduced batch size for better error handling
     const batches = Math.ceil(data.length / batchSize);
 
     for (let i = 0; i < batches; i++) {
@@ -519,24 +520,16 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       const end = Math.min(start + batchSize, data.length);
       const batch = data.slice(start, end);
 
-      // Process each record in the current batch
-      const batchPromises = batch.map(async (record, index) => {
+      for (let index = 0; index < batch.length; index++) {
+        const record = batch[index];
         const recordIndex = start + index;
         try {
-          // First check for images and process them
           strapi.log.info(`Processing record ${recordIndex} for images`);
           const processedRecord = await this.processObjectForImages(record, contentType);
-
-          // Create the content type entry with processed image references
-          strapi.log.info(`Creating content type ${contentType} entry with processed data`);
-
-          // Clean up any failed image references before creating the entry
           const sanitizedRecord = this.sanitizeRecordBeforeCreate(processedRecord);
-          strapi.log.info(`sanitizedRecord: ${JSON.stringify(sanitizedRecord, null, 2)}`);
+          // strapi.log.info(`sanitizedRecord: ${JSON.stringify(sanitizedRecord, null, 2)}`);
 
-          // Validate the record against the schema
           await validateRecordAgainstSchema(schema, sanitizedRecord);
-          // Create entry in the specified content type
           await strapi.entityService.create(`api::${contentType}.${contentType}`, {
             data: sanitizedRecord,
           });
@@ -551,11 +544,10 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
           });
           results.failedRecords.push(record);
         }
-      });
+      }
 
-      // Wait for all records in the batch to be processed before moving to the next batch
-      // Using allSettled to prevent one failure from stopping the entire batch
-      await Promise.allSettled(batchPromises);
+      // Optional: short delay between batches to reduce pressure
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
     return results;
@@ -641,13 +633,9 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
-  async transformDrupalToStrapi(
-    contentType,
-    drupalData,
-    fieldsMapping = {},
-    relationsMapping = {}
-  ) {
+  async transformDrupalToStrapi(drupalData, fieldsMapping = {}, relationsMapping = {}) {
     // Map Drupal JSON:API data to Strapi content-type format, including relations
+    // First, map all items and resolve all promises
     return drupalData.map((item) => {
       const strapiItem: Record<string, any> = {};
 
@@ -660,14 +648,34 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       for (const [strapiRel, drupalRel] of Object.entries(relationsMapping)) {
         const relData = item.relationships?.[drupalRel as string]?.data;
         if (Array.isArray(relData)) {
-          strapiItem[strapiRel] = relData.map((rel: any) => rel.id);
+          // Resolve all relationship promises in the array
+          const relationIds = relData.map((rel: any) => {
+            findDrupalRelationshipData(rel.id, strapiRel)
+              .then((id) => {
+                return id;
+              })
+              .catch((error) => {
+                strapi.log.error(`Error finding Drupal relationship data: ${error.message}`);
+                return rel.id;
+              });
+          });
+
+          strapiItem[strapiRel] = relationIds;
         } else if (relData && relData.id) {
-          strapiItem[strapiRel] = relData.id;
+          findDrupalRelationshipData(relData.id, strapiRel)
+            .then((id) => {
+              strapiItem[strapiRel] = id;
+            })
+            .catch((error) => {
+              strapi.log.error(`Error finding Drupal relationship data: ${error.message}`);
+              strapiItem[strapiRel] = relData.id;
+            });
         }
       }
 
       // Optionally, include the original Drupal id for reference
       strapiItem['drupal_id'] = item.id;
+      strapi.log.info(`strapiItem: ${JSON.stringify(strapiItem, null, 2)}`);
 
       return strapiItem;
     });

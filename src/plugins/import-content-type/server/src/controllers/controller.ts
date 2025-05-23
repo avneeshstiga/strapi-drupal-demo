@@ -301,27 +301,42 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async fetchDrupalData(ctx) {
     try {
-      const { baseUrl, endpoint, params, contentType, fieldsMapping, relationsMapping } =
-        ctx.request.body;
+      const {
+        baseUrl,
+        endpoint,
+        params,
+        contentType,
+        fieldsMapping,
+        relationsMapping,
+        convertToStrapi,
+      } = ctx.request.body;
+      const startTime = Date.now();
       if (!baseUrl || !endpoint) {
         return ctx.badRequest('baseUrl and endpoint are required in the request body');
       }
-      let page = 0;
+      let page = 1;
       let allResults = [];
-      let keepFetching = true;
+      let hasNextPage = true;
       const agent = new https.Agent({ rejectUnauthorized: false });
 
-      while (keepFetching) {
+      while (hasNextPage) {
+        const offset = (page - 1) * 50;
         const url = `${baseUrl.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
-        const queryParams = { ...params, page: { limit: 50, offset: page * 50 } };
+        const urlWithQuery = `${url}?page[limit]=${50}&page[offset]=${offset}`;
+        const queryParams = { ...params };
         try {
-          const response = await axios.get(url, { params: queryParams, httpsAgent: agent });
+          const response = await axios.get(urlWithQuery, {
+            params: queryParams,
+            httpsAgent: agent,
+          });
           const data = response.data && response.data.data ? response.data.data : [];
-          if (Array.isArray(data) && data.length > 0) {
+          if (data.length === 0) {
+            strapi.log.info(`--- No more data to fetch --- Last Page: ${page}`);
+            hasNextPage = false;
+          } else {
+            strapi.log.info(`--- Page ${page} ---`);
             allResults = allResults.concat(data);
             page++;
-          } else {
-            keepFetching = false;
           }
         } catch (err) {
           strapi.log.error(`Error fetching from Drupal: ${err.message}`);
@@ -330,21 +345,61 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       }
 
       // If strapi param is true, transform the data
-      if (params && params.strapi && contentType) {
+      if (convertToStrapi && contentType) {
         const service = strapi.plugin('import-content-type').service('service');
         const transformed = await service.transformDrupalToStrapi(
-          contentType,
           allResults,
           fieldsMapping || {},
           relationsMapping || {}
         );
-        return ctx.send({ success: true, count: transformed.length, data: transformed });
-      }
 
-      ctx.send({ success: true, count: allResults.length, data: allResults });
+        if (!transformed || !Array.isArray(transformed)) {
+          return ctx.badRequest('Request body must contain a "data" array');
+        }
+
+        // Log import request for debugging
+        strapi.log.info(`Importing ${transformed.length} records into ${contentType}`);
+
+        // Call service to handle the import
+        const result = await strapi
+          .plugin('import-content-type')
+          .service('service')
+          .importData(contentType, transformed);
+
+        const endTime = Date.now();
+        const duration = (endTime - startTime) / 1000 / 60;
+
+        return ctx.send({
+          success: true,
+          result,
+          count: transformed.length,
+          data: transformed,
+          duration: `${duration} minutes`,
+        });
+      }
     } catch (error) {
       strapi.log.error(`fetchDrupalData error: ${error.message}`);
       return ctx.badRequest(error.message || 'Error fetching from Drupal');
+    }
+  },
+
+  async deleteContentType(ctx) {
+    try {
+      const { contentType } = ctx.params;
+      const entries = (await strapi.entityService.findMany(`api::${contentType}.${contentType}`, {
+        fields: ['id'],
+        limit: -1, // Get all (be cautious!)
+      })) as any[];
+
+      for (const entry of entries) {
+        strapi.log.info(`Deleting ${contentType} with id: ${entry.id}`);
+        await strapi.entityService.delete(`api::${contentType}.${contentType}`, entry.id);
+      }
+
+      return ctx.send({ success: true, deleted: entries.length });
+    } catch (error) {
+      strapi.log.error(`deleteContentType error: ${error.message}`);
+      return ctx.badRequest(error.message || 'Error deleting content type');
     }
   },
 });
