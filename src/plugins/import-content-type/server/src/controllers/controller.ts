@@ -377,7 +377,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async generateSchemaFromDrupal(ctx) {
     try {
-      const { baseUrl, endpoint, params, file = true } = ctx.request.body;
+      const { baseUrl, endpoint, params, file = false } = ctx.request.body;
       if (!baseUrl || !endpoint) {
         return ctx.badRequest('baseUrl and endpoint are required in the request body');
       }
@@ -420,7 +420,15 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       // STEP 1: First identify and fetch all related entities
       for (const [relKey, relValue] of Object.entries(relationships)) {
         // Skip the specified relations: parent, vid, and content_translation_uid
-        if (relKey === 'parent' || relKey === 'vid' || relKey === 'content_translation_uid') {
+        if (
+          relKey === 'parent' ||
+          relKey === 'vid' ||
+          relKey === 'content_translation_uid' ||
+          relKey === 'node_type' ||
+          relKey === 'revision_uid' ||
+          relKey === 'uid' ||
+          relKey === 'menu_link'
+        ) {
           continue;
         }
 
@@ -925,11 +933,24 @@ export default factories.createCoreService('api::${contentTypeName}.${contentTyp
         mappedKey = 'taxonomy_pim_id';
       }
 
-      // Check if the key contains "_link" - always make it a string type
+      // Format label - capitalize and replace underscores with spaces
+      const fieldLabel = mappedKey
+        .replace(/_/g, ' ')
+        .split(' ')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+      // Simple attribute structure for Strapi 5
       if (key.includes('_link')) {
-        schema.attributes[mappedKey] = { type: 'string' };
+        schema.attributes[mappedKey] = {
+          type: 'string',
+          displayName: fieldLabel,
+        };
       } else if (mappedKey === 'description') {
-        schema.attributes[mappedKey] = { type: 'blocks' };
+        schema.attributes[mappedKey] = {
+          type: 'blocks',
+          displayName: fieldLabel,
+        };
       } else if (mappedKey === 'language' || key === 'langcode') {
         // Set up language as a component reference
         schema.attributes[mappedKey] = {
@@ -937,23 +958,48 @@ export default factories.createCoreService('api::${contentTypeName}.${contentTyp
           repeatable: false,
           component: 'shared.language',
           required: true,
+          displayName: fieldLabel,
         };
       } else if (mappedKey === 'published') {
-        schema.attributes[mappedKey] = { type: 'boolean' };
+        schema.attributes[mappedKey] = {
+          type: 'boolean',
+          displayName: fieldLabel,
+        };
       } else if (typeof value === 'string') {
-        schema.attributes[mappedKey] = { type: 'string' };
+        schema.attributes[mappedKey] = {
+          type: 'string',
+          displayName: fieldLabel,
+        };
       } else if (typeof value === 'number') {
-        schema.attributes[mappedKey] = { type: 'integer' };
+        schema.attributes[mappedKey] = {
+          type: 'integer',
+          displayName: fieldLabel,
+        };
       } else if (typeof value === 'boolean') {
-        schema.attributes[mappedKey] = { type: 'boolean' };
+        schema.attributes[mappedKey] = {
+          type: 'boolean',
+          displayName: fieldLabel,
+        };
       } else if (value instanceof Date) {
-        schema.attributes[mappedKey] = { type: 'datetime' };
+        schema.attributes[mappedKey] = {
+          type: 'datetime',
+          displayName: fieldLabel,
+        };
       } else if (Array.isArray(value)) {
-        schema.attributes[mappedKey] = { type: 'json' };
+        schema.attributes[mappedKey] = {
+          type: 'json',
+          displayName: fieldLabel,
+        };
       } else if (typeof value === 'object' && value !== null) {
-        schema.attributes[mappedKey] = { type: 'json' };
+        schema.attributes[mappedKey] = {
+          type: 'json',
+          displayName: fieldLabel,
+        };
       } else {
-        schema.attributes[mappedKey] = { type: 'string' };
+        schema.attributes[mappedKey] = {
+          type: 'string',
+          displayName: fieldLabel,
+        };
       }
     }
 
@@ -962,7 +1008,7 @@ export default factories.createCoreService('api::${contentTypeName}.${contentTyp
       type: 'string',
       required: true,
       unique: true,
-      description: 'Drupal content ID for synchronization',
+      displayName: 'Drupal ID',
     };
 
     return schema;
