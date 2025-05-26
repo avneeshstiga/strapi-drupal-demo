@@ -1,4 +1,4 @@
-import { getImageUrlFromTaxonomy } from '../../utils/media';
+import { getImageUrlFromIncluded } from '../../utils/media';
 import { findDrupalRelationshipData } from '../../utils/strapi-queries';
 
 const handleGenericRelation = (relationshipData, strapiRelKey): number => {
@@ -15,15 +15,11 @@ const handleGenericRelation = (relationshipData, strapiRelKey): number => {
   return id;
 };
 
-const handleImageRelation = (baseUrl, relationshipData, includedData): string | null => {
-  return getImageUrlFromTaxonomy(baseUrl, relationshipData, includedData);
-};
-
 const handleRelationsBasedOnType = (baseUrl, relationshipData, strapiRelKey, includedData) => {
   switch (relationshipData.type) {
     case 'file--file':
     case 'media--image':
-      return handleImageRelation(baseUrl, relationshipData, includedData);
+      return getImageUrlFromIncluded(baseUrl, relationshipData, includedData);
     default:
       return handleGenericRelation(relationshipData, strapiRelKey);
   }

@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 import https from 'https';
 import os from 'os';
 import path from 'path';
-import { checkFileExists, checkFolderExists, createFolder } from '../utils/media';
+import { checkFileExists, handleFolder } from '../utils/media';
 import { validateRecordAgainstSchema } from '../utils/validateRecordAgainstSchema';
 import { handleRelation } from './helpers/handleRelation';
 
@@ -72,25 +72,19 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       const name = path.basename(urlPath, extension);
       const filename = `${name}${extension}`;
 
+      const folderId = await handleFolder(url);
+
       strapi.log.info(`Checking if image ${filename} exists in strapi media library`);
-      // Check if folder exists
-      let folderId = await checkFolderExists(contentType);
-      if (!Boolean(folderId)) {
-        strapi.log.info(`Folder ${contentType} does not exist, creating it`);
-        folderId = await createFolder(contentType);
-      } else {
-        strapi.log.info(`Folder ${contentType} already exists, ${folderId}`);
-        const fileId = await checkFileExists(filename);
-        if (Boolean(fileId)) {
-          strapi.log.info(`Image ${filename} already exists in strapi media library`);
-          return {
-            data: null,
-            name: filename,
-            id: fileId,
-            folderId,
-            alreadyExists: true,
-          };
-        }
+      const fileId = await checkFileExists(filename, folderId);
+      if (Boolean(fileId)) {
+        strapi.log.info(`Image ${filename} already exists in strapi media library`);
+        return {
+          data: null,
+          name: filename,
+          id: fileId,
+          folderId,
+          alreadyExists: true,
+        };
       }
 
       strapi.log.info(`Attempting to download image from ${url}`);
