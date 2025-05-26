@@ -305,7 +305,6 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
         baseUrl,
         endpoint,
         params,
-        dataController,
         contentType,
         fieldsMapping,
         relationsMapping,
@@ -323,8 +322,8 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       const agent = new https.Agent({ rejectUnauthorized: false });
 
       while (hasNextPage) {
-        const limit = dataController.limit || 50;
-        const offset = dataController.limit ? 0 : (page - 1) * limit;
+        const limit = 50;
+        const offset = (page - 1) * limit;
         refinedBaseUrl = baseUrl.replace(/\/$/, '');
         const refinedEndpoint = endpoint.replace(/^\//, '');
         const url = `${refinedBaseUrl}/${refinedEndpoint}`;
@@ -343,7 +342,6 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             strapi.log.info(`--- Page ${page} ---`);
             allResults = allResults.concat(data);
             includedResult = response.data && response.data.included ? response.data.included : [];
-            dataController.limit && (hasNextPage = false);
             page++;
           }
         } catch (err) {
