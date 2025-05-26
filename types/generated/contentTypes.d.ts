@@ -457,6 +457,45 @@ export interface ApiAcTypeAcType extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiArticleTypeArticleType extends Struct.CollectionTypeSchema {
+  collectionName: 'article_types';
+  info: {
+    description: '';
+    displayName: 'Article Type';
+    pluralName: 'article-types';
+    singularName: 'article-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  pluginOptions: {
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::article-type.article-type'
+    >;
+    name: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    taxonomy_pim_id: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
 export interface ApiArticleArticle extends Struct.CollectionTypeSchema {
   collectionName: 'articles';
   info: {
@@ -473,8 +512,6 @@ export interface ApiArticleArticle extends Struct.CollectionTypeSchema {
       'images' | 'files' | 'videos' | 'audios',
       true
     >;
-    author: Schema.Attribute.Relation<'manyToOne', 'api::author.author'>;
-    category: Schema.Attribute.Relation<'manyToOne', 'api::category.category'>;
     cover: Schema.Attribute.Media<'images' | 'files' | 'videos'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -499,68 +536,515 @@ export interface ApiArticleArticle extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiAuthorAuthor extends Struct.CollectionTypeSchema {
-  collectionName: 'authors';
+export interface ApiBjpGovernedStateBjpGovernedState
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'bjp_governed_states';
   info: {
-    description: 'Create authors for your content';
-    displayName: 'Author';
-    pluralName: 'authors';
-    singularName: 'author';
+    description: '';
+    displayName: 'BJP Governed States';
+    pluralName: 'bjp-governed-states';
+    singularName: 'bjp-governed-state';
   };
   options: {
-    draftAndPublish: false;
+    draftAndPublish: true;
+  };
+  pluginOptions: {
+    i18n: {
+      localized: true;
+    };
   };
   attributes: {
-    articles: Schema.Attribute.Relation<'oneToMany', 'api::article.article'>;
-    avatar: Schema.Attribute.Media<'images' | 'files' | 'videos'>;
+    bjp_governed_state_images: Schema.Attribute.Media<
+      'images' | 'files',
+      true
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    email: Schema.Attribute.String;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    domain_url: Schema.Attribute.String;
+    drupal_id: Schema.Attribute.String;
+    historical_monuments: Schema.Attribute.Media<'images' | 'files', true>;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
-      'api::author.author'
-    > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String;
+      'api::bjp-governed-state.bjp-governed-state'
+    >;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }> &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
     publishedAt: Schema.Attribute.DateTime;
+    state_highlight: Schema.Attribute.String & Schema.Attribute.Required;
+    state_website_home_logo: Schema.Attribute.Media<
+      'images' | 'files' | 'videos' | 'audios',
+      true
+    >;
+    state_website_home_logo_hi: Schema.Attribute.Media<'images' | 'files'>;
+    state_website_inner_logo: Schema.Attribute.Media<'images' | 'files'>;
+    state_website_inner_logo_h: Schema.Attribute.Media<'images' | 'files'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+    welcome_message_state_home: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 255;
+      }>;
   };
 }
 
-export interface ApiCategoryCategory extends Struct.CollectionTypeSchema {
-  collectionName: 'categories';
+export interface ApiBjpLiveTagBjpLiveTag extends Struct.CollectionTypeSchema {
+  collectionName: 'bjp_live_tags';
   info: {
-    description: 'Organize your content into categories';
-    displayName: 'Category';
-    pluralName: 'categories';
-    singularName: 'category';
+    displayName: 'BJP Live Tags';
+    pluralName: 'bjp-live-tags';
+    singularName: 'bjp-live-tag';
   };
   options: {
-    draftAndPublish: false;
+    draftAndPublish: true;
   };
   attributes: {
-    articles: Schema.Attribute.Relation<'oneToMany', 'api::article.article'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Text;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
-      'api::category.category'
+      'api::bjp-live-tag.bjp-live-tag'
     > &
       Schema.Attribute.Private;
-    name: Schema.Attribute.String;
-    product: Schema.Attribute.Relation<'manyToOne', 'api::product.product'>;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
-    slug: Schema.Attribute.UID;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
+export interface ApiBudgetGlanceTypeBudgetGlanceType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'budget_glance_types';
+  info: {
+    description: '';
+    displayName: 'Budget Glance Type';
+    pluralName: 'budget-glance-types';
+    singularName: 'budget-glance-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::budget-glance-type.budget-glance-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
+export interface ApiCampaignMaterialsPhotoTypeCampaignMaterialsPhotoType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'campaign_materials_photo_types';
+  info: {
+    displayName: 'Campaign Materials Photo Types';
+    pluralName: 'campaign-materials-photo-types';
+    singularName: 'campaign-materials-photo-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.String;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::campaign-materials-photo-type.campaign-materials-photo-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
+export interface ApiCampaignMaterialsStatePhotoTypeCampaignMaterialsStatePhotoType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'campaign_materials_state_photo_types';
+  info: {
+    displayName: 'Campaign Materials State Photo Types';
+    pluralName: 'campaign-materials-state-photo-types';
+    singularName: 'campaign-materials-state-photo-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::campaign-materials-state-photo-type.campaign-materials-state-photo-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
+export interface ApiCampaignMaterialsStateVideoTypeCampaignMaterialsStateVideoType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'campaign_materials_state_video_types';
+  info: {
+    displayName: 'Campaign Materials State Video Types';
+    pluralName: 'campaign-materials-state-video-types';
+    singularName: 'campaign-materials-state-video-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::campaign-materials-state-video-type.campaign-materials-state-video-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
+export interface ApiCampaignMaterialsVideoTypeCampaignMaterialsVideoType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'campaign_materials_video_types';
+  info: {
+    description: '';
+    displayName: 'Campaign Materials Video Types';
+    pluralName: 'campaign-materials-video-types';
+    singularName: 'campaign-materials-video-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::campaign-materials-video-type.campaign-materials-video-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
+export interface ApiCommitteeCommittee extends Struct.CollectionTypeSchema {
+  collectionName: 'committees';
+  info: {
+    displayName: 'Committees';
+    pluralName: 'committees';
+    singularName: 'committee';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::committee.committee'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
+export interface ApiCommitteesDesignationCommitteesDesignation
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'committees_designations';
+  info: {
+    displayName: 'Committees Designation';
+    pluralName: 'committees-designations';
+    singularName: 'committees-designation';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::committees-designation.committees-designation'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    taxonomy_pim_id: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
+export interface ApiCommonYearMasterCommonYearMaster
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'common_year_masters';
+  info: {
+    displayName: 'Common Year Master';
+    pluralName: 'common-year-masters';
+    singularName: 'common-year-master';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::common-year-master.common-year-master'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    taxonomy_pim_id: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
+export interface ApiDelhiDistrictDelhiDistrict
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'delhi_districts';
+  info: {
+    displayName: 'Delhi Districts';
+    pluralName: 'delhi-districts';
+    singularName: 'delhi-district';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::delhi-district.delhi-district'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
+export interface ApiDepartmentTypeDepartmentType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'department_types';
+  info: {
+    displayName: 'Department Type';
+    pluralName: 'department-types';
+    singularName: 'department-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    departnments_image: Schema.Attribute.Media<'images' | 'files'>;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::department-type.department-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
+export interface ApiElectionFormatTypeElectionFormatType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'election_format_types';
+  info: {
+    displayName: 'Election Format Type';
+    pluralName: 'election-format-types';
+    singularName: 'election-format-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::election-format-type.election-format-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
+export interface ApiElectionStateElectionState
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'election_states';
+  info: {
+    displayName: 'Election States';
+    pluralName: 'election-states';
+    singularName: 'election-state';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::election-state.election-state'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
   };
 }
 
@@ -596,6 +1080,39 @@ export interface ApiGlobalGlobal extends Struct.SingleTypeSchema {
   };
 }
 
+export interface ApiHistoryOfThePartyYearHistoryOfThePartyYear
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'history_of_the_party_years';
+  info: {
+    displayName: 'History of the party Year';
+    pluralName: 'history-of-the-party-years';
+    singularName: 'history-of-the-party-year';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    drupal_published: Schema.Attribute.Boolean;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::history-of-the-party-year.history-of-the-party-year'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String;
+  };
+}
+
 export interface ApiLanguageLanguage extends Struct.CollectionTypeSchema {
   collectionName: 'languages';
   info: {
@@ -625,40 +1142,6 @@ export interface ApiLanguageLanguage extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     name: Schema.Attribute.String & Schema.Attribute.Required;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiProductProduct extends Struct.CollectionTypeSchema {
-  collectionName: 'products';
-  info: {
-    description: '';
-    displayName: 'product';
-    pluralName: 'products';
-    singularName: 'product';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    categories: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::category.category'
-    >;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::product.product'
-    > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String & Schema.Attribute.Required;
-    price: Schema.Attribute.Integer & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -1218,12 +1701,25 @@ declare module '@strapi/strapi' {
       'admin::user': AdminUser;
       'api::about.about': ApiAboutAbout;
       'api::ac-type.ac-type': ApiAcTypeAcType;
+      'api::article-type.article-type': ApiArticleTypeArticleType;
       'api::article.article': ApiArticleArticle;
-      'api::author.author': ApiAuthorAuthor;
-      'api::category.category': ApiCategoryCategory;
+      'api::bjp-governed-state.bjp-governed-state': ApiBjpGovernedStateBjpGovernedState;
+      'api::bjp-live-tag.bjp-live-tag': ApiBjpLiveTagBjpLiveTag;
+      'api::budget-glance-type.budget-glance-type': ApiBudgetGlanceTypeBudgetGlanceType;
+      'api::campaign-materials-photo-type.campaign-materials-photo-type': ApiCampaignMaterialsPhotoTypeCampaignMaterialsPhotoType;
+      'api::campaign-materials-state-photo-type.campaign-materials-state-photo-type': ApiCampaignMaterialsStatePhotoTypeCampaignMaterialsStatePhotoType;
+      'api::campaign-materials-state-video-type.campaign-materials-state-video-type': ApiCampaignMaterialsStateVideoTypeCampaignMaterialsStateVideoType;
+      'api::campaign-materials-video-type.campaign-materials-video-type': ApiCampaignMaterialsVideoTypeCampaignMaterialsVideoType;
+      'api::committee.committee': ApiCommitteeCommittee;
+      'api::committees-designation.committees-designation': ApiCommitteesDesignationCommitteesDesignation;
+      'api::common-year-master.common-year-master': ApiCommonYearMasterCommonYearMaster;
+      'api::delhi-district.delhi-district': ApiDelhiDistrictDelhiDistrict;
+      'api::department-type.department-type': ApiDepartmentTypeDepartmentType;
+      'api::election-format-type.election-format-type': ApiElectionFormatTypeElectionFormatType;
+      'api::election-state.election-state': ApiElectionStateElectionState;
       'api::global.global': ApiGlobalGlobal;
+      'api::history-of-the-party-year.history-of-the-party-year': ApiHistoryOfThePartyYearHistoryOfThePartyYear;
       'api::language.language': ApiLanguageLanguage;
-      'api::product.product': ApiProductProduct;
       'api::state.state': ApiStateState;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;

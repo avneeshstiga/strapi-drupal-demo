@@ -14,7 +14,7 @@
       "type": "string",
       "required": true
     },
-    "Description": {
+    "description": {
       "type": "text"
     },
     "drupal_id": {

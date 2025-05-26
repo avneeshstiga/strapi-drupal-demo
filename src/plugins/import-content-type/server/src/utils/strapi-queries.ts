@@ -17,6 +17,6 @@ export const findDrupalRelationshipData = async (drupalId: string, strapiRel: st
     return data?.id;
   } catch (error) {
     strapi.log.error(`Error finding Drupal relationship data: ${error.message}`);
-    return null;
+    return error;
   }
 };

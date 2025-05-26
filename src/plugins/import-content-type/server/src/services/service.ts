@@ -1,13 +1,13 @@
 import type { Core } from '@strapi/strapi';
-import fs from 'fs-extra';
 import axios from 'axios';
-import path from 'path';
-import mime from 'mime-types';
-import os from 'os';
 import FormData from 'form-data'; // Node.js FormData implementation
-import { validateRecordAgainstSchema } from '../utils/validateRecordAgainstSchema';
+import fs from 'fs-extra';
+import https from 'https';
+import os from 'os';
+import path from 'path';
 import { checkFileExists, checkFolderExists, createFolder } from '../utils/media';
-import { findDrupalRelationshipData } from '../utils/strapi-queries';
+import { validateRecordAgainstSchema } from '../utils/validateRecordAgainstSchema';
+import { handleRelation } from './helpers/handleRelation';
 
 const service = ({ strapi }: { strapi: Core.Strapi }) => ({
   getWelcomeMessage() {
@@ -95,12 +95,14 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
 
       strapi.log.info(`Attempting to download image from ${url}`);
 
+      const agent = new https.Agent({ rejectUnauthorized: false });
       // Download the image as a buffer
       const response = await axios.get(url, {
         responseType: 'arraybuffer',
         timeout: 15000, // 15 seconds timeout
         maxContentLength: 10 * 1024 * 1024, // 10MB max size
         validateStatus: (status) => status === 200, // Only accept 200 responses
+        httpsAgent: agent,
       });
 
       // Validate that we got some data
@@ -633,7 +635,13 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
-  async transformDrupalToStrapi(drupalData, fieldsMapping = {}, relationsMapping = {}) {
+  async transformDrupalToStrapi(
+    refinedBaseUrl,
+    drupalData,
+    fieldsMapping = {},
+    relationsMapping = {},
+    includedResult = []
+  ) {
     // Map Drupal JSON:API data to Strapi content-type format, including relations
     // First, map all items and resolve all promises
     return drupalData.map((item) => {
@@ -645,32 +653,22 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       }
 
       // Map relationships
-      for (const [strapiRel, drupalRel] of Object.entries(relationsMapping)) {
-        const relData = item.relationships?.[drupalRel as string]?.data;
-        if (Array.isArray(relData)) {
-          // Resolve all relationship promises in the array
-          const relationIds = relData.map((rel: any) => {
-            findDrupalRelationshipData(rel.id, strapiRel)
-              .then((id) => {
-                return id;
-              })
-              .catch((error) => {
-                strapi.log.error(`Error finding Drupal relationship data: ${error.message}`);
-                return rel.id;
-              });
-          });
+      for (const [strapiRelKey, drupalRelKey] of Object.entries(relationsMapping)) {
+        const relationshipData = item.relationships?.[drupalRelKey as string]?.data;
 
-          strapiItem[strapiRel] = relationIds;
-        } else if (relData && relData.id) {
-          findDrupalRelationshipData(relData.id, strapiRel)
-            .then((id) => {
-              strapiItem[strapiRel] = id;
-            })
-            .catch((error) => {
-              strapi.log.error(`Error finding Drupal relationship data: ${error.message}`);
-              strapiItem[strapiRel] = relData.id;
-            });
+        if (!relationshipData) {
+          strapiItem[strapiRelKey] = null;
+          strapi.log.info(
+            `No relationship data found for strapi key: ${strapiRelKey}, drupal key: ${drupalRelKey}`
+          );
+          continue;
         }
+
+        const data = handleRelation(refinedBaseUrl, relationshipData, strapiRelKey, includedResult);
+        strapi.log.info(
+          `relationship data found for strapi key: ${strapiRelKey}, drupal key: ${drupalRelKey}: ${JSON.stringify(data, null, 2)}`
+        );
+        strapiItem[strapiRelKey] = data;
       }
 
       // Optionally, include the original Drupal id for reference

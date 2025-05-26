@@ -305,6 +305,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
         baseUrl,
         endpoint,
         params,
+        dataController,
         contentType,
         fieldsMapping,
         relationsMapping,
@@ -316,13 +317,18 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       }
       let page = 1;
       let allResults = [];
+      let includedResult = [];
       let hasNextPage = true;
+      let refinedBaseUrl = baseUrl;
       const agent = new https.Agent({ rejectUnauthorized: false });
 
       while (hasNextPage) {
-        const offset = (page - 1) * 50;
-        const url = `${baseUrl.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
-        const urlWithQuery = `${url}?page[limit]=${50}&page[offset]=${offset}`;
+        const limit = dataController.limit || 50;
+        const offset = dataController.limit ? 0 : (page - 1) * limit;
+        refinedBaseUrl = baseUrl.replace(/\/$/, '');
+        const refinedEndpoint = endpoint.replace(/^\//, '');
+        const url = `${refinedBaseUrl}/${refinedEndpoint}`;
+        const urlWithQuery = `${url}?page[limit]=${limit}&page[offset]=${offset}`;
         const queryParams = { ...params };
         try {
           const response = await axios.get(urlWithQuery, {
@@ -336,6 +342,8 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           } else {
             strapi.log.info(`--- Page ${page} ---`);
             allResults = allResults.concat(data);
+            includedResult = response.data && response.data.included ? response.data.included : [];
+            dataController.limit && (hasNextPage = false);
             page++;
           }
         } catch (err) {
@@ -348,9 +356,11 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       if (convertToStrapi && contentType) {
         const service = strapi.plugin('import-content-type').service('service');
         const transformed = await service.transformDrupalToStrapi(
+          refinedBaseUrl,
           allResults,
           fieldsMapping || {},
-          relationsMapping || {}
+          relationsMapping || {},
+          includedResult
         );
 
         if (!transformed || !Array.isArray(transformed)) {
@@ -372,8 +382,6 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
         return ctx.send({
           success: true,
           result,
-          count: transformed.length,
-          data: transformed,
           duration: `${duration} minutes`,
         });
       }
