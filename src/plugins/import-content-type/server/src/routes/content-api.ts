@@ -71,4 +71,31 @@ export default [
       auth: false, // Make this endpoint public
     },
   },
+  {
+    method: 'POST',
+    path: '/import-drupal-user-in-strapi',
+    handler: 'controller.importDrupalUserInStrapi', //http://localhost:1337/api/import-content-type/import-drupal-user-in-strapi
+    config: {
+      policies: [],
+      auth: false, // Make this endpoint public
+    },
+  },
+  {
+    method: 'POST',
+    path: '/import-bjp-domains',
+    handler: 'controller.importBjpDomains', //http://localhost:1337/api/import-content-type/import-bjp-domains
+    config: {
+      policies: [],
+      auth: false, // Make this endpoint public
+    },
+  },
+  {
+    method: 'POST',
+    path: '/import-bjp-complete',
+    handler: 'controller.importBjpComplete', //http://localhost:1337/api/import-content-type/import-bjp-complete
+    config: {
+      policies: [],
+      auth: false, // Make this endpoint public
+    },
+  },
 ];

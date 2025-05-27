@@ -1,0 +1,66 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_admins",
+  "info": {
+    "singularName": "user-admin",
+    "pluralName": "user-admins",
+    "displayName": "User Admin",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "username": {
+      "type": "string",
+      "unique": true
+    },
+    "admin_user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "admin::user"
+    },
+    "picture": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": ["images", "files"]
+    },
+    "site_language": {
+      "type": "component",
+      "repeatable": false,
+      "component": "shared.language"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "mobile_number": {
+      "type": "biginteger"
+    },
+    "pim_User_id": {
+      "type": "string"
+    },
+    "email_address": {
+      "type": "string"
+    },
+    "google_analytics_settings": {
+      "type": "boolean",
+      "default": true
+    },
+    "drupal_id": {
+      "type": "string",
+      "description": "Drupal content ID for synchronization"
+    },
+    "domain_access": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::domain.domain",
+      "mappedBy": "user_access"
+    },
+    "domain_admin": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::domain.domain",
+      "mappedBy": "user_admin"
+    }
+  }
+}

@@ -12,6 +12,20 @@ export interface SharedHighlightState extends Struct.ComponentSchema {
   };
 }
 
+export interface SharedLanguage extends Struct.ComponentSchema {
+  collectionName: 'components_shared_languages';
+  info: {
+    description: 'Language selector component';
+    displayName: 'Language';
+    icon: 'globe';
+  };
+  attributes: {
+    code: Schema.Attribute.Enumeration<['en', 'hi', 'sv']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'en'>;
+  };
+}
+
 export interface SharedMedia extends Struct.ComponentSchema {
   collectionName: 'components_shared_media';
   info: {
@@ -80,6 +94,7 @@ declare module '@strapi/strapi' {
   export module Public {
     export interface ComponentSchemas {
       'shared.highlight-state': SharedHighlightState;
+      'shared.language': SharedLanguage;
       'shared.media': SharedMedia;
       'shared.quote': SharedQuote;
       'shared.rich-text': SharedRichText;
