@@ -1,0 +1,87 @@
+{
+  "kind": "collectionType",
+  "collectionName": "press_releases",
+  "info": {
+    "singularName": "press-releases",
+    "pluralName": "press-releasess",
+    "displayName": "Press Releases",
+    "description": "Imported from Drupal 8: press_releases",
+    "drupalEndpoint": "press_releases"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "published": {
+      "type": "boolean",
+      "displayName": "Published"
+    },
+    "title": {
+      "type": "string",
+      "displayName": "Title"
+    },
+    "promote": {
+      "type": "boolean",
+      "displayName": "Promote"
+    },
+    "sticky": {
+      "type": "boolean",
+      "displayName": "Sticky"
+    },
+    "default_langcode": {
+      "type": "boolean",
+      "displayName": "Default Langcode"
+    },
+    "body": {
+      "type": "json",
+      "displayName": "Body"
+    },
+    "article_archive": {
+      "type": "json",
+      "displayName": "Article Archive"
+    },
+    "date_press_releases": {
+      "type": "string",
+      "displayName": "Date Press Releases"
+    },
+    "domain_all_affiliates": {
+      "type": "boolean",
+      "displayName": "Domain All Affiliates"
+    },
+    "media_title": {
+      "type": "string",
+      "displayName": "Media Title"
+    },
+    "meta_tags": {
+      "type": "string",
+      "displayName": "Meta Tags"
+    },
+    "node_joomla_id": {
+      "type": "string",
+      "displayName": "Node Joomla Id"
+    },
+    "node_pim_id": {
+      "type": "string",
+      "displayName": "Node Pim Id"
+    },
+    "pressrelease_upload_media": {
+      "type": "string",
+      "displayName": "Pressrelease Upload Media"
+    },
+    "press_releases_order": {
+      "type": "integer",
+      "displayName": "Press Releases Order"
+    },
+    "press_release_shorten_link": {
+      "type": "string",
+      "displayName": "Press Release Shorten Link"
+    },
+    "drupal_id": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "displayName": "Drupal ID"
+    }
+  }
+}

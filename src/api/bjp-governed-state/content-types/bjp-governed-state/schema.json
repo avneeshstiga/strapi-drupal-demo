@@ -41,13 +41,13 @@
     },
     "historical_monuments": {
       "type": "media",
-      "multiple": true,
+      "multiple": false,
       "required": false,
       "allowedTypes": ["images", "files"]
     },
     "bjp_governed_state_images": {
       "type": "media",
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "allowedTypes": ["images", "files"],
       "pluginOptions": {
@@ -58,7 +58,7 @@
     },
     "state_website_home_logo": {
       "type": "media",
-      "multiple": true,
+      "multiple": false,
       "required": false,
       "allowedTypes": ["images", "files", "videos", "audios"]
     },

@@ -17,16 +17,16 @@
   },
   "attributes": {
     "taxonomy_pim_id": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 60
     },
     "drupal_id": {
       "type": "string"
     },
     "name": {
-      "type": "string"
-    },
-    "description": {
-      "type": "text"
+      "type": "string",
+      "required": true,
+      "maxLength": 60
     },
     "languages": {
       "type": "relation",
@@ -38,6 +38,9 @@
     },
     "drupal_published": {
       "type": "boolean"
+    },
+    "description": {
+      "type": "blocks"
     }
   }
 }

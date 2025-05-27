@@ -4,7 +4,8 @@
   "info": {
     "singularName": "bjp-live-tag",
     "pluralName": "bjp-live-tags",
-    "displayName": "BJP Live Tags"
+    "displayName": "BJP Live Tags",
+    "description": ""
   },
   "options": {
     "draftAndPublish": true
@@ -14,9 +15,6 @@
       "type": "string",
       "required": true
     },
-    "description": {
-      "type": "text"
-    },
     "drupal_id": {
       "type": "string"
     },
@@ -25,6 +23,9 @@
     },
     "url_alias": {
       "type": "string"
+    },
+    "description": {
+      "type": "blocks"
     }
   }
 }

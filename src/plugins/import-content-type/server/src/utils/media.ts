@@ -35,7 +35,6 @@ export const handleFolder = async (fileUrl) => {
   const folderSegments = segments.slice(1, -1); // skip "files", remove filename
 
   let parentId = null;
-  let folderPath = '';
 
   for (const segment of folderSegments) {
     const name = decodeURIComponent(segment);
@@ -47,22 +46,39 @@ export const handleFolder = async (fileUrl) => {
 
       if (existing) {
         parentId = existing.id;
-        strapi.log.info(`Folder ${name} already exists, ${parentId}`);
+        strapi.log.info(`Folder ${name} already exists, ${JSON.stringify(existing, null, 2)}`);
+        // check folder path exists 
+        // add to logs
         continue;
       }
+
+      const folders = await strapi.query('plugin::upload.folder').findMany({
+        orderBy: { id: 'desc' },
+        limit: 1,
+      });
+      const nextId = folders.length ? folders[0].id + 1 : 1;
 
       const folder = await strapi.query('plugin::upload.folder').create({
         data: {
           name,
           parent: parentId,
-          folderPath,
         },
       });
+      // make entry for path in db
 
-      strapi.log.info(`Folder ${name} created, ${folder.id}`);
+      // get folder data for folder.path using findone
+      // log folder path 
+      strapi.log.info(`Folder ${name} created, ${JSON.stringify(folder, null, 2)}`);
       parentId = folder.id;
+
+      // Insert or update path directly using raw SQL
+      await strapi.db.connection.raw(
+        `UPDATE upload_folders SET path = ? WHERE id = ?`,
+        [nextId, parentId]
+      );
+
     } catch (error) {
-      strapi.log.error(`Error creating folder ${folderPath}: ${error}`);
+      strapi.log.error(`Error creating folder ${error}`);
     }
   }
 

@@ -28,7 +28,8 @@
       "type": "string"
     },
     "pim_id": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 60
     },
     "drupal_id": {
       "type": "string"

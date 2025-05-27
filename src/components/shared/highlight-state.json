@@ -1,0 +1,19 @@
+{
+  "collectionName": "components_shared_highlight_states",
+  "info": {
+    "displayName": "highlight_state",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "state_highlight": {
+      "type": "enumeration",
+      "enum": [
+        "None",
+        "Yes",
+        "No"
+      ],
+      "default": "None"
+    }
+  }
+}

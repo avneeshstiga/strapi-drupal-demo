@@ -1,0 +1,162 @@
+{
+  "kind": "collectionType",
+  "collectionName": "leaders",
+  "info": {
+    "singularName": "leaders",
+    "pluralName": "leaderss",
+    "displayName": "Leaders",
+    "description": "Imported from Drupal 8: leaders",
+    "drupalEndpoint": "leaders"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "published": {
+      "type": "boolean",
+      "displayName": "Published"
+    },
+    "title": {
+      "type": "string",
+      "displayName": "Title"
+    },
+    "promote": {
+      "type": "boolean",
+      "displayName": "Promote"
+    },
+    "sticky": {
+      "type": "boolean",
+      "displayName": "Sticky"
+    },
+    "default_langcode": {
+      "type": "boolean",
+      "displayName": "Default Langcode"
+    },
+    "body": {
+      "type": "string",
+      "displayName": "Body"
+    },
+    "article_archive": {
+      "type": "json",
+      "displayName": "Article Archive"
+    },
+    "background_image_color": {
+      "type": "string",
+      "displayName": "Background Image Color"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "displayName": "Date Of Birth"
+    },
+    "date_of_death": {
+      "type": "string",
+      "displayName": "Date Of Death"
+    },
+    "domain_all_affiliates": {
+      "type": "boolean",
+      "displayName": "Domain All Affiliates"
+    },
+    "duration": {
+      "type": "json",
+      "displayName": "Duration"
+    },
+    "election_corner_leader_ext": {
+      "type": "string",
+      "displayName": "Election Corner Leader Ext"
+    },
+    "email": {
+      "type": "string",
+      "displayName": "Email"
+    },
+    "email_id": {
+      "type": "json",
+      "displayName": "Email Id"
+    },
+    "ios_app_link": {
+      "type": "string",
+      "displayName": "Ios App Link"
+    },
+    "is_alive": {
+      "type": "string",
+      "displayName": "Is Alive"
+    },
+    "leaders_is_mp": {
+      "type": "string",
+      "displayName": "Leaders Is Mp"
+    },
+    "leaders_shorten_link": {
+      "type": "string",
+      "displayName": "Leaders Shorten Link"
+    },
+    "leader_address": {
+      "type": "json",
+      "displayName": "Leader Address"
+    },
+    "leader_banner_caption": {
+      "type": "string",
+      "displayName": "Leader Banner Caption"
+    },
+    "leader_contact_no": {
+      "type": "json",
+      "displayName": "Leader Contact No"
+    },
+    "leader_facebook": {
+      "type": "string",
+      "displayName": "Leader Facebook"
+    },
+    "leader_instagram": {
+      "type": "string",
+      "displayName": "Leader Instagram"
+    },
+    "leader_mobile_app": {
+      "type": "string",
+      "displayName": "Leader Mobile App"
+    },
+    "leader_twitter": {
+      "type": "string",
+      "displayName": "Leader Twitter"
+    },
+    "leader_website": {
+      "type": "string",
+      "displayName": "Leader Website"
+    },
+    "leader_youtube": {
+      "type": "string",
+      "displayName": "Leader Youtube"
+    },
+    "lok_sabha_and_rajya_sabha": {
+      "type": "string",
+      "displayName": "Lok Sabha And Rajya Sabha"
+    },
+    "meta_tags": {
+      "type": "string",
+      "displayName": "Meta Tags"
+    },
+    "node_pim_id": {
+      "type": "string",
+      "displayName": "Node Pim Id"
+    },
+    "parliamentary_twitter": {
+      "type": "string",
+      "displayName": "Parliamentary Twitter"
+    },
+    "sub_title": {
+      "type": "string",
+      "displayName": "Sub Title"
+    },
+    "template_selection_option": {
+      "type": "string",
+      "displayName": "Template Selection Option"
+    },
+    "weight": {
+      "type": "integer",
+      "displayName": "Weight"
+    },
+    "drupal_id": {
+      "type": "string",
+      "unique": true,
+      "displayName": "Drupal ID"
+    }
+  }
+}
