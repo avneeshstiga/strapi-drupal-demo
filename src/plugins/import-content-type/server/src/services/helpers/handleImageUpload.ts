@@ -1,6 +1,6 @@
 import path from 'path';
 import { checkFileExists, handleFolder } from '../../utils/media';
-import FormData from 'form-data'; 
+import FormData from 'form-data';
 import axios from 'axios';
 import https from 'https';
 import fs from 'fs-extra';
@@ -13,7 +13,10 @@ import os from 'os';
  * @returns Array of media IDs or original URL if upload fails
  */
 
-export const handleImageUpload = async (imageUrl: string, contentType: string): Promise<number[] | string[]> => {
+export const handleImageUpload = async (
+  imageUrl: string,
+  contentType: string
+): Promise<number[] | string[]> => {
   try {
     // Download and upload the image to Strapi
     const fileData = await downloadImage(imageUrl, contentType);
@@ -207,56 +210,56 @@ export const uploadFileToStrapiMediaLibrary = async (fileData, name = null) => {
   }
 };
 
-  /**
-   * Upload a file to Strapi's media library using direct API call
-   * @param fileData - File data object with data buffer
-   * @param tmpFilePath - Path to temporary file
-   * @param folderId - Folder ID to upload to
-   * @returns Uploaded file object
-   */
-  const  uploadViaAPI = async (fileData, tmpFilePath, folderId) {
-    try {
-      // Create form data for the API request
-      const form = new FormData();
+/**
+ * Upload a file to Strapi's media library using direct API call
+ * @param fileData - File data object with data buffer
+ * @param tmpFilePath - Path to temporary file
+ * @param folderId - Folder ID to upload to
+ * @returns Uploaded file object
+ */
+export const uploadViaAPI = async (fileData, tmpFilePath, folderId) => {
+  try {
+    // Create form data for the API request
+    const form = new FormData();
 
-      // Append the file to form data
-      form.append('file', fs.createReadStream(tmpFilePath));
-      form.append('folderId', folderId);
+    // Append the file to form data
+    form.append('file', fs.createReadStream(tmpFilePath));
+    form.append('folderId', folderId);
 
-      // Create headers from form
-      const headers = form.getHeaders();
+    // Create headers from form
+    const headers = form.getHeaders();
 
-      // If we have a configured API token, use it for authorization
-      // This should be created in the Strapi admin and the token ID stored in environment variable
-      // STRAPI_UPLOAD_TOKEN or in the Strapi configuration
-      let token = '';
-      if (process.env.STRAPI_UPLOAD_TOKEN) {
-        token = process.env.STRAPI_UPLOAD_TOKEN;
-      } else if (strapi.config.get('plugin.import-content-type.uploadToken')) {
-        token = strapi.config.get('plugin.import-content-type.uploadToken');
-      }
+    // If we have a configured API token, use it for authorization
+    // This should be created in the Strapi admin and the token ID stored in environment variable
+    // STRAPI_UPLOAD_TOKEN or in the Strapi configuration
+    let token = '';
+    if (process.env.STRAPI_UPLOAD_TOKEN) {
+      token = process.env.STRAPI_UPLOAD_TOKEN;
+    } else if (strapi.config.get('plugin.import-content-type.uploadToken')) {
+      token = strapi.config.get('plugin.import-content-type.uploadToken');
+    }
 
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
-      // Make a direct HTTP request to the Strapi upload endpoint
-      const serverUrl = strapi.config.server.url || 'http://localhost:1337';
-      const apiUrl = `${serverUrl}/api/media/upload`;
+    // Make a direct HTTP request to the Strapi upload endpoint
+    const serverUrl = strapi.config.server.url || 'http://localhost:1337';
+    const apiUrl = `${serverUrl}/api/media/upload`;
 
-      const response = await axios.post(apiUrl, form, { headers });
-      strapi.log.info(`Posting to API URL: ${apiUrl}`);
+    const response = await axios.post(apiUrl, form, { headers });
+    strapi.log.info(`Posting to API URL: ${apiUrl}`);
 
-      if (response.data && response.data.data && response.data.data[0].id) {
-        strapi.log.info(`API upload succeeded with ID ${response.data.data[0].id}`);
+    if (response.data && response.data.data && response.data.data[0].id) {
+      strapi.log.info(`API upload succeeded with ID ${response.data.data[0].id}`);
 
-        return response.data.data[0];
-      } else {
-        strapi.log.error('API upload response invalid');
-        return null;
-      }
-    } catch (apiError) {
-      strapi.log.error(`API upload approach failed: ${apiError.message}`);
+      return response.data.data[0];
+    } else {
+      strapi.log.error('API upload response invalid');
       return null;
     }
-  },
+  } catch (apiError) {
+    strapi.log.error(`API upload approach failed: ${apiError.message}`);
+    return null;
+  }
+};

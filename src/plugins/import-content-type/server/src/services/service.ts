@@ -182,26 +182,31 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       for (let index = 0; index < batch.length; index++) {
         const record = batch[index];
         const recordIndex = start + index;
+        let sanitizedRecord;
         try {
           strapi.log.info(`Processing record ${recordIndex} for images`);
           const processedRecord = await this.processObjectForImages(record, contentType);
-          const sanitizedRecord = this.sanitizeRecordBeforeCreate(processedRecord);
-          // strapi.log.info(`sanitizedRecord: ${JSON.stringify(sanitizedRecord, null, 2)}`);
+          sanitizedRecord = this.sanitizeRecordBeforeCreate(processedRecord);
 
-          await validateRecordAgainstSchema(schema, sanitizedRecord);
+          const { status, ...rest } = sanitizedRecord;
+
+          await validateRecordAgainstSchema(schema, rest);
           await strapi.entityService.create(`api::${contentType}.${contentType}`, {
-            data: sanitizedRecord,
+            data: rest,
+            status: status ?? 'draft',
           });
 
           results.successful++;
         } catch (error) {
           strapi.log.error(`Error processing record ${recordIndex}: ${error.message}`);
+          const { status, ...rest } = sanitizedRecord;
+
           results.failed++;
           results.errors.push({
             index: recordIndex,
             error: { ...error },
           });
-          results.failedRecords.push(record);
+          results.failedRecords.push(rest);
         }
       }
 
