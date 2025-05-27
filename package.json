@@ -16,6 +16,7 @@
     "upgrade:dry": "npx @strapi/upgrade latest --dry"
   },
   "dependencies": {
+    "@google-cloud/logging-winston": "^6.0.1",
     "@localazy/strapi-plugin": "^1.0.1",
     "@strapi/plugin-cloud": "5.13.0",
     "@strapi/plugin-documentation": "^5.13.0",

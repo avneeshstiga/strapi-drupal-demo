@@ -655,7 +655,7 @@ export interface ApiBudgetGlanceTypeBudgetGlanceType
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    description: Schema.Attribute.Text;
+    description: Schema.Attribute.Blocks;
     drupal_id: Schema.Attribute.String;
     drupal_published: Schema.Attribute.Boolean;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
