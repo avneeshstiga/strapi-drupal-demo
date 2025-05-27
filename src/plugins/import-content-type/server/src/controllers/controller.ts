@@ -845,22 +845,24 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   /**
-   * Complete BJP import - imports domains first, then users with domain relations
+   * Complete BJP import - imports domains first, then roles, then users with domain and role relations
    * @param ctx Koa context
    */
   async importBjpComplete(ctx) {
     try {
       const startTime = Date.now();
-      strapi.log.info('Starting complete BJP import (domains + users with relations)');
+      strapi.log.info('Starting complete BJP import (domains + roles + users with relations)');
 
       // Get parameters from request body
       const {
         drupalUrl = 'https://bjp.org/user-export-strapi',
         domainUrl = 'https://bjp.org/custom/domain-list',
+        roleUrl = 'https://bjp.org/custom/role-list',
       } = ctx.request.body || {};
 
       const results = {
         domains: null,
+        roles: null,
         users: null,
         summary: {},
       };
@@ -926,8 +928,117 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
         return ctx.badRequest(`Domain import failed: ${domainError.message}`);
       }
 
-      // Step 2: Import users with domain relations
-      strapi.log.info('Step 2: Importing users with domain relations (with pagination)...');
+      // Step 2: Import roles
+      strapi.log.info('Step 2: Importing admin roles...');
+      try {
+        // Create HTTPS agent to handle SSL issues
+        const agent = new https.Agent({ rejectUnauthorized: false });
+
+        // Fetch roles from BJP API
+        const roleResponse = await axios.get(roleUrl, {
+          httpsAgent: agent,
+          headers: {
+            Accept: 'application/json',
+            'User-Agent': 'Strapi-Import-Plugin/1.0',
+          },
+          timeout: 30000,
+        });
+
+        if (!roleResponse.data || !Array.isArray(roleResponse.data)) {
+          throw new Error('Invalid response from BJP roles API - expected an array');
+        }
+
+        const bjpRoles = roleResponse.data;
+        strapi.log.info(`Fetched ${bjpRoles.length} roles from BJP API`);
+
+        // Create admin roles in Strapi
+        const adminRolesCreated = [];
+        const adminRolesErrors = [];
+
+        for (const bjpRole of bjpRoles) {
+          try {
+            // Extract role information
+            const roleName = bjpRole.label || bjpRole.name || 'Unknown Role';
+            const roleCode =
+              bjpRole.id || bjpRole.machine_name || roleName.toLowerCase().replace(/\s+/g, '-');
+            const roleDescription = bjpRole.description || `Role imported from BJP: ${roleName}`;
+            const roleUuid = bjpRole.uuid;
+
+            if (!roleUuid) {
+              strapi.log.warn(`Skipping role creation - missing UUID for role: ${roleName}`);
+              continue;
+            }
+
+            // Check if admin role already exists by code or name
+            const existingRole = await strapi.db.query('admin::role').findOne({
+              where: {
+                $or: [{ code: roleCode }, { name: roleName }],
+              },
+            });
+
+            if (existingRole) {
+              strapi.log.info(`Admin role already exists: ${roleName} (${roleCode})`);
+              adminRolesCreated.push({
+                id: existingRole.id,
+                name: existingRole.name,
+                code: existingRole.code,
+                bjpUuid: roleUuid,
+                isExisting: true,
+              });
+              continue;
+            }
+
+            // Create admin role
+            const adminRoleData = {
+              name: roleName,
+              code: roleCode,
+              description: roleDescription,
+            };
+
+            const createdAdminRole = await strapi.db.query('admin::role').create({
+              data: adminRoleData,
+            });
+
+            adminRolesCreated.push({
+              id: createdAdminRole.id,
+              name: createdAdminRole.name,
+              code: createdAdminRole.code,
+              bjpUuid: roleUuid,
+              isExisting: false,
+            });
+
+            strapi.log.info(
+              `Created admin role: ${createdAdminRole.name} (ID: ${createdAdminRole.id}, Code: ${createdAdminRole.code})`
+            );
+          } catch (roleError) {
+            const roleName = bjpRole.label || bjpRole.name || 'unknown';
+            strapi.log.error(`Error creating admin role ${roleName}: ${roleError.message}`);
+            adminRolesErrors.push({
+              name: roleName,
+              uuid: bjpRole.uuid,
+              error: roleError.message,
+            });
+          }
+        }
+
+        results.roles = {
+          fetchedCount: bjpRoles.length,
+          created: adminRolesCreated.length,
+          errors: adminRolesErrors.length,
+          createdRoles: adminRolesCreated,
+          errorDetails: adminRolesErrors,
+        };
+
+        strapi.log.info(`Successfully created ${adminRolesCreated.length} admin roles`);
+      } catch (roleError) {
+        strapi.log.error(`Role import failed: ${roleError.message}`);
+        return ctx.badRequest(`Role import failed: ${roleError.message}`);
+      }
+
+      // Step 3: Import users with domain and role relations
+      strapi.log.info(
+        'Step 3: Importing users with domain and role relations (with pagination)...'
+      );
       try {
         // Create HTTPS agent to handle SSL issues
         const agent = new https.Agent({ rejectUnauthorized: false });
@@ -1021,6 +1132,14 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
               return [];
             };
 
+            // Extract role UUIDs from the roles field
+            const extractRoleUuids = (field) => {
+              if (Array.isArray(field)) {
+                return field.map((item) => item.target_uuid).filter((uuid) => uuid);
+              }
+              return [];
+            };
+
             const uid = extractValue(drupalUser.uid);
             const username = extractValue(drupalUser.name);
             const email = extractValue(drupalUser.mail);
@@ -1030,6 +1149,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             const uuid = extractValue(drupalUser.uuid);
             const domainAccessUuids = extractDomainUuids(drupalUser.field_domain_access);
             const domainAdminUuids = extractDomainUuids(drupalUser.field_domain_admin);
+            const roleUuids = extractRoleUuids(drupalUser.roles);
 
             const strapiUser = {
               username: username || email,
@@ -1041,6 +1161,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
               google_analytics_settings: true,
               _domainAccessUuids: domainAccessUuids,
               _domainAdminUuids: domainAdminUuids,
+              _roleUuids: roleUuids,
             };
 
             Object.keys(strapiUser).forEach((key) => {
@@ -1063,6 +1184,14 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             return defaultValue;
           };
 
+          // Extract role UUIDs for admin user role assignment
+          const extractRoleUuids = (field) => {
+            if (Array.isArray(field)) {
+              return field.map((item) => item.target_uuid).filter((uuid) => uuid);
+            }
+            return [];
+          };
+
           for (const drupalUser of allDrupalUsers) {
             try {
               const username = extractValue(drupalUser.name);
@@ -1071,6 +1200,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
               const uuid = extractValue(drupalUser.uuid);
               const status = extractValue(drupalUser.status, true);
               const langcode = extractValue(drupalUser.langcode, 'en');
+              const roleUuids = extractRoleUuids(drupalUser.roles);
 
               if (!username || !email) {
                 strapi.log.warn(
@@ -1096,6 +1226,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
                   username: existingUser.username,
                   email: existingUser.email,
                   drupalUuid: uuid,
+                  roleUuids: roleUuids,
                   isExisting: true,
                 });
                 continue;
@@ -1120,6 +1251,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
                 username: createdAdminUser.username,
                 email: createdAdminUser.email,
                 drupalUuid: uuid,
+                roleUuids: roleUuids,
                 isExisting: false,
               });
 
@@ -1174,6 +1306,23 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             `Found ${Object.keys(domainUuidToIdMap).length} domains for relation mapping`
           );
 
+          // Resolve role relations
+          strapi.log.info('Resolving role relations...');
+
+          // Create UUID to ID mapping for roles
+          const roleUuidToIdMap = {};
+          if (results.roles && results.roles.createdRoles) {
+            results.roles.createdRoles.forEach((role) => {
+              if (role.bjpUuid) {
+                roleUuidToIdMap[role.bjpUuid] = role.id;
+              }
+            });
+          }
+
+          strapi.log.info(
+            `Found ${Object.keys(roleUuidToIdMap).length} roles for relation mapping`
+          );
+
           const transformedUsersWithDomainRelations = transformedUsersWithAdminRelations.map(
             (strapiUser) => {
               const userWithDomains: any = { ...strapiUser };
@@ -1200,10 +1349,60 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
               delete userWithDomains._domainAccessUuids;
               delete userWithDomains._domainAdminUuids;
+              delete userWithDomains._roleUuids;
 
               return userWithDomains;
             }
           );
+
+          // Assign roles to admin users
+          strapi.log.info('Assigning roles to admin users...');
+
+          const roleAssignmentResults = {
+            successful: 0,
+            failed: 0,
+            errors: [],
+          };
+
+          for (const adminUser of adminUsersCreated) {
+            try {
+              if (adminUser.roleUuids && adminUser.roleUuids.length > 0) {
+                // Map role UUIDs to role IDs
+                const roleIds = adminUser.roleUuids
+                  .map((uuid) => roleUuidToIdMap[uuid])
+                  .filter((id) => id);
+
+                if (roleIds.length > 0) {
+                  // Update admin user with roles
+                  await strapi.db.query('admin::user').update({
+                    where: { id: adminUser.id },
+                    data: {
+                      roles: roleIds,
+                    },
+                  });
+
+                  roleAssignmentResults.successful++;
+                  strapi.log.info(
+                    `Assigned ${roleIds.length} roles to admin user: ${adminUser.username} (ID: ${adminUser.id})`
+                  );
+                } else {
+                  strapi.log.warn(
+                    `No matching roles found for admin user: ${adminUser.username} (UUIDs: ${adminUser.roleUuids.join(', ')})`
+                  );
+                }
+              }
+            } catch (roleAssignError) {
+              roleAssignmentResults.failed++;
+              roleAssignmentResults.errors.push({
+                userId: adminUser.id,
+                username: adminUser.username,
+                error: roleAssignError.message,
+              });
+              strapi.log.error(
+                `Error assigning roles to admin user ${adminUser.username}: ${roleAssignError.message}`
+              );
+            }
+          }
 
           // Import users with all relations
           const userResult = await strapi
@@ -1222,11 +1421,12 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
               createdUsers: adminUsersCreated,
               errorDetails: adminUsersErrors,
             },
+            roleAssignments: roleAssignmentResults,
             pagesProcessed: currentPage,
           };
 
           strapi.log.info(
-            `Successfully imported ${transformedUsersWithDomainRelations.length} users with domain relations from ${currentPage} pages (${originalUserCount} total fetched)`
+            `Successfully imported ${transformedUsersWithDomainRelations.length} users with domain and role relations from ${currentPage} pages (${originalUserCount} total fetched)`
           );
         }
       } catch (userError) {
@@ -1240,19 +1440,380 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       results.summary = {
         totalDuration: `${duration.toFixed(2)} seconds`,
         domainsImported: results.domains?.result?.created || 0,
+        rolesCreated: results.roles?.created || 0,
         usersImported: results.users?.result?.created || 0,
         adminUsersCreated: results.users?.adminUsers?.created || 0,
+        roleAssignmentsSuccessful: results.users?.roleAssignments?.successful || 0,
         pagesProcessed: results.users?.pagesProcessed || 0,
       };
 
       return ctx.send({
         success: true,
-        message: 'Successfully completed BJP import (domains + users with relations)',
+        message: 'Successfully completed BJP import (domains + roles + users with relations)',
         results,
       });
     } catch (error) {
       strapi.log.error(`importBjpComplete error: ${error.message}`);
       return ctx.badRequest(error.message || 'Error during complete BJP import');
+    }
+  },
+  /**
+   * Delete all users from admin users and user-admin collection type, domains, and admin roles
+   * @param ctx Koa context
+   */
+  async deleteAllUsers(ctx) {
+    try {
+      const startTime = Date.now();
+      strapi.log.info(
+        'Starting deletion of all users, domains, and roles from admin and collections'
+      );
+
+      const results = {
+        adminUsers: {
+          deleted: 0,
+          errors: [],
+        },
+        userAdminCollection: {
+          deleted: 0,
+          errors: [],
+        },
+        domainCollection: {
+          deleted: 0,
+          errors: [],
+        },
+        adminRoles: {
+          deleted: 0,
+          errors: [],
+        },
+      };
+
+      // Step 1: Delete all admin users (except super admin to prevent lockout)
+      try {
+        strapi.log.info('Step 1: Deleting admin users...');
+
+        const adminUsers = await strapi.db.query('admin::user').findMany({
+          where: {
+            // Don't delete super admin users to prevent complete lockout
+            isActive: true,
+          },
+        });
+
+        strapi.log.info(`Found ${adminUsers.length} admin users to process`);
+
+        for (const adminUser of adminUsers) {
+          try {
+            // Skip super admin users (those with all permissions or specific super admin role)
+            const userRoles = await strapi.db.query('admin::user').findOne({
+              where: { id: adminUser.id },
+              populate: ['roles'],
+            });
+
+            // Check if user has super admin role (you might need to adjust this logic based on your setup)
+            const isSuperAdmin = userRoles.roles?.some(
+              (role) =>
+                role.code === 'strapi-super-admin' ||
+                role.name?.toLowerCase().includes('super') ||
+                role.name?.toLowerCase().includes('administrator')
+            );
+
+            if (isSuperAdmin && adminUsers.length > 1) {
+              strapi.log.info(
+                `Skipping super admin user: ${adminUser.username} (${adminUser.email})`
+              );
+              continue;
+            }
+
+            await strapi.db.query('admin::user').delete({
+              where: { id: adminUser.id },
+            });
+
+            results.adminUsers.deleted++;
+            strapi.log.info(`Deleted admin user: ${adminUser.username} (ID: ${adminUser.id})`);
+          } catch (userError) {
+            strapi.log.error(
+              `Error deleting admin user ${adminUser.username}: ${userError.message}`
+            );
+            results.adminUsers.errors.push({
+              id: adminUser.id,
+              username: adminUser.username,
+              email: adminUser.email,
+              error: userError.message,
+            });
+          }
+        }
+      } catch (adminError) {
+        strapi.log.error(`Error processing admin users: ${adminError.message}`);
+        results.adminUsers.errors.push({
+          general: adminError.message,
+        });
+      }
+
+      // Step 2: Delete all user-admin collection type entries
+      try {
+        strapi.log.info('Step 2: Deleting user-admin collection entries...');
+
+        // First try with entityService
+        let userAdminEntries = [];
+        try {
+          userAdminEntries = (await strapi.entityService.findMany('api::user-admin.user-admin', {
+            fields: ['id'],
+            limit: -1, // Get all entries
+          })) as any[];
+        } catch (findError) {
+          strapi.log.warn(
+            `EntityService findMany failed: ${findError.message}, trying direct DB query`
+          );
+
+          // Fallback to direct database query
+          try {
+            userAdminEntries = await strapi.db.query('api::user-admin.user-admin').findMany({
+              select: ['id'],
+            });
+          } catch (dbError) {
+            strapi.log.error(`Direct DB query also failed: ${dbError.message}`);
+            throw new Error(`Cannot find user-admin entries: ${dbError.message}`);
+          }
+        }
+
+        strapi.log.info(`Found ${userAdminEntries.length} user-admin entries to delete`);
+
+        if (userAdminEntries.length === 0) {
+          strapi.log.info('No user-admin entries found to delete');
+        } else {
+          // Delete entries one by one with detailed logging
+          for (const entry of userAdminEntries) {
+            try {
+              strapi.log.info(`Attempting to delete user-admin entry with ID: ${entry.id}`);
+
+              // Try entityService first
+              try {
+                await strapi.entityService.delete('api::user-admin.user-admin', entry.id);
+                results.userAdminCollection.deleted++;
+                strapi.log.info(
+                  `Successfully deleted user-admin entry with ID: ${entry.id} using entityService`
+                );
+              } catch (entityDeleteError) {
+                strapi.log.warn(
+                  `EntityService delete failed for ID ${entry.id}: ${entityDeleteError.message}, trying direct DB delete`
+                );
+
+                // Fallback to direct database delete
+                await strapi.db.query('api::user-admin.user-admin').delete({
+                  where: { id: entry.id },
+                });
+                results.userAdminCollection.deleted++;
+                strapi.log.info(
+                  `Successfully deleted user-admin entry with ID: ${entry.id} using direct DB query`
+                );
+              }
+            } catch (entryError) {
+              strapi.log.error(
+                `Error deleting user-admin entry ${entry.id}: ${entryError.message}`
+              );
+              results.userAdminCollection.errors.push({
+                id: entry.id,
+                error: entryError.message,
+              });
+            }
+          }
+
+          // Verify deletion by checking remaining entries
+          try {
+            const remainingEntries = (await strapi.entityService.findMany(
+              'api::user-admin.user-admin',
+              {
+                fields: ['id'],
+                limit: 10, // Just check if any remain
+              }
+            )) as any[];
+
+            if (remainingEntries.length > 0) {
+              strapi.log.warn(
+                `Warning: ${remainingEntries.length} user-admin entries still remain after deletion attempt`
+              );
+
+              // Try bulk deletion as last resort
+              strapi.log.info('Attempting bulk deletion of remaining user-admin entries...');
+              try {
+                // Use raw SQL for bulk deletion if available
+                const deletedCount = await strapi.db.connection.raw('DELETE FROM user_admins');
+                strapi.log.info(
+                  `Bulk deletion completed. Affected rows: ${deletedCount[0]?.affectedRows || 'unknown'}`
+                );
+
+                // Update the deleted count (this is approximate since we don't know exact count)
+                results.userAdminCollection.deleted += remainingEntries.length;
+              } catch (bulkDeleteError) {
+                strapi.log.error(`Bulk deletion failed: ${bulkDeleteError.message}`);
+
+                // Final attempt: delete remaining entries one by one using direct DB queries
+                strapi.log.info(
+                  'Final attempt: deleting remaining entries individually with direct DB queries...'
+                );
+                for (const remainingEntry of remainingEntries) {
+                  try {
+                    await strapi.db.query('api::user-admin.user-admin').delete({
+                      where: { id: remainingEntry.id },
+                    });
+                    results.userAdminCollection.deleted++;
+                    strapi.log.info(`Force deleted user-admin entry with ID: ${remainingEntry.id}`);
+                  } catch (forceDeleteError) {
+                    strapi.log.error(
+                      `Force delete failed for ID ${remainingEntry.id}: ${forceDeleteError.message}`
+                    );
+                    results.userAdminCollection.errors.push({
+                      id: remainingEntry.id,
+                      error: `Force delete failed: ${forceDeleteError.message}`,
+                    });
+                  }
+                }
+              }
+            } else {
+              strapi.log.info(
+                'Verification: All user-admin entries have been successfully deleted'
+              );
+            }
+          } catch (verifyError) {
+            strapi.log.warn(`Could not verify deletion: ${verifyError.message}`);
+          }
+        }
+      } catch (collectionError) {
+        strapi.log.error(`Error processing user-admin collection: ${collectionError.message}`);
+        results.userAdminCollection.errors.push({
+          general: collectionError.message,
+        });
+      }
+
+      // Step 3: Delete all domain collection type entries
+      try {
+        strapi.log.info('Step 3: Deleting domain collection entries...');
+
+        const domainEntries = (await strapi.entityService.findMany('api::domain.domain', {
+          fields: ['id'],
+          limit: -1, // Get all entries
+        })) as any[];
+
+        strapi.log.info(`Found ${domainEntries.length} domain entries to delete`);
+
+        for (const entry of domainEntries) {
+          try {
+            await strapi.entityService.delete('api::domain.domain', entry.id);
+            results.domainCollection.deleted++;
+            strapi.log.info(`Deleted domain entry with ID: ${entry.id}`);
+          } catch (entryError) {
+            strapi.log.error(`Error deleting domain entry ${entry.id}: ${entryError.message}`);
+            results.domainCollection.errors.push({
+              id: entry.id,
+              error: entryError.message,
+            });
+          }
+        }
+      } catch (collectionError) {
+        strapi.log.error(`Error processing domain collection: ${collectionError.message}`);
+        results.domainCollection.errors.push({
+          general: collectionError.message,
+        });
+      }
+
+      // Step 4: Delete all admin roles (except default Strapi roles to prevent system issues)
+      try {
+        strapi.log.info('Step 4: Deleting admin roles...');
+
+        const adminRoles = await strapi.db.query('admin::role').findMany({
+          where: {},
+        });
+
+        strapi.log.info(`Found ${adminRoles.length} admin roles to process`);
+
+        for (const role of adminRoles) {
+          try {
+            // Skip default Strapi roles to prevent system issues
+            const isDefaultRole =
+              role.code === 'strapi-super-admin' ||
+              role.code === 'strapi-editor' ||
+              role.code === 'strapi-author' ||
+              role.name?.toLowerCase().includes('super admin') ||
+              role.name?.toLowerCase().includes('editor') ||
+              role.name?.toLowerCase().includes('author');
+
+            if (isDefaultRole) {
+              strapi.log.info(`Skipping default Strapi role: ${role.name} (${role.code})`);
+              continue;
+            }
+
+            // Check if role is assigned to any users
+            const usersWithRole = await strapi.db.query('admin::user').findMany({
+              where: {
+                roles: {
+                  id: role.id,
+                },
+              },
+            });
+
+            if (usersWithRole.length > 0) {
+              strapi.log.info(
+                `Skipping role ${role.name} as it's assigned to ${usersWithRole.length} users`
+              );
+              continue;
+            }
+
+            await strapi.db.query('admin::role').delete({
+              where: { id: role.id },
+            });
+
+            results.adminRoles.deleted++;
+            strapi.log.info(`Deleted admin role: ${role.name} (ID: ${role.id})`);
+          } catch (roleError) {
+            strapi.log.error(`Error deleting admin role ${role.name}: ${roleError.message}`);
+            results.adminRoles.errors.push({
+              id: role.id,
+              name: role.name,
+              code: role.code,
+              error: roleError.message,
+            });
+          }
+        }
+      } catch (rolesError) {
+        strapi.log.error(`Error processing admin roles: ${rolesError.message}`);
+        results.adminRoles.errors.push({
+          general: rolesError.message,
+        });
+      }
+
+      const endTime = Date.now();
+      const duration = (endTime - startTime) / 1000;
+
+      const totalDeleted =
+        results.adminUsers.deleted +
+        results.userAdminCollection.deleted +
+        results.domainCollection.deleted +
+        results.adminRoles.deleted;
+
+      const totalErrors =
+        results.adminUsers.errors.length +
+        results.userAdminCollection.errors.length +
+        results.domainCollection.errors.length +
+        results.adminRoles.errors.length;
+
+      return ctx.send({
+        success: true,
+        message: `Successfully deleted ${totalDeleted} items (users, domains, and roles)`,
+        duration: `${duration.toFixed(2)} seconds`,
+        results: {
+          summary: {
+            totalDeleted,
+            totalErrors,
+            adminUsersDeleted: results.adminUsers.deleted,
+            userAdminCollectionDeleted: results.userAdminCollection.deleted,
+            domainCollectionDeleted: results.domainCollection.deleted,
+            adminRolesDeleted: results.adminRoles.deleted,
+          },
+          details: results,
+        },
+      });
+    } catch (error) {
+      strapi.log.error(`deleteAllUsers error: ${error.message}`);
+      return ctx.badRequest(error.message || 'Error deleting all users, domains, and roles');
     }
   },
 });

@@ -98,4 +98,13 @@ export default [
       auth: false, // Make this endpoint public
     },
   },
+  {
+    method: 'DELETE',
+    path: '/delete-all-users',
+    handler: 'controller.deleteAllUsers', //http://localhost:1337/api/import-content-type/delete-all-users
+    config: {
+      policies: [],
+      auth: false, // Make this endpoint public
+    },
+  },
 ];
