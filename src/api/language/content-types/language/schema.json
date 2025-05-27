@@ -36,12 +36,12 @@
     },
     "drupal_id": {
       "type": "string",
-       "unique": true
+      "unique": true
     },
     "default_langcode": {
       "type": "boolean"
     },
-     "drupal_langcode": {
+    "drupal_langcode": {
       "type": "string"
     },
     "weight": {
