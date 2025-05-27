@@ -1,0 +1,34 @@
+{
+  "kind": "collectionType",
+  "collectionName": "union_budget_years",
+  "info": {
+    "singularName": "union-budget-year",
+    "pluralName": "union-budget-years",
+    "displayName": "Union Budget Year",
+    "description": "Union Budget Year taxonomy from Drupal"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

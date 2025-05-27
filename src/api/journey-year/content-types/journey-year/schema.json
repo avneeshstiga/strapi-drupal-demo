@@ -1,0 +1,34 @@
+{
+  "kind": "collectionType",
+  "collectionName": "journey_years",
+  "info": {
+    "singularName": "journey-year",
+    "pluralName": "journey-years",
+    "displayName": "Journey Year",
+    "description": "Year values used in the BJP Journey taxonomy"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+   "description": {
+      "type": "blocks"
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

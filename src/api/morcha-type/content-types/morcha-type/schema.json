@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "morcha_types",
+  "info": {
+    "singularName": "morcha-type",
+    "pluralName": "morcha-types",
+    "displayName": "Morcha Type",
+    "description": "Types of Morcha such as Kisan Morcha"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+    "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

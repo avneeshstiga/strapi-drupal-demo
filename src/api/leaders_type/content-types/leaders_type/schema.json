@@ -1,0 +1,34 @@
+{
+  "kind": "collectionType",
+  "collectionName": "leaders_types",
+  "info": {
+    "singularName": "leaders-type",
+    "pluralName": "leaders-types",
+    "displayName": "Leaders Type",
+    "description": "Categorization of political leadership roles"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

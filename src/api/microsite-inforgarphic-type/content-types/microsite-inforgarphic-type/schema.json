@@ -1,0 +1,45 @@
+{
+  "kind": "collectionType",
+  "collectionName": "microsite_inforgarphic_types",
+  "info": {
+    "singularName": "microsite-inforgarphic-type",
+    "pluralName": "microsite-inforgarphic-types",
+    "displayName": "Microsite Infographic Type",
+    "description": "Taxonomy for microsite infographic categories"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+   "description": {
+      "type": "blocks"
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+    "metatag": {
+      "type": "json"
+    },
+    "field_microsite_category_image": {
+      "type": "media",
+      "multiple": false,
+      "required": false
+    },
+    "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "collectionName": "state_infographic_types",
+  "info": {
+    "singularName": "state-infographic-type",
+    "pluralName": "state-infographic-types",
+    "displayName": "State Infographic Type",
+    "description": "Types of state-level infographics and their metadata"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+     "description": {
+      "type": "blocks"
+    },
+   "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+
+    "drupal_tid": {
+      "type": "integer",
+      "required": true
+    },
+    "drupal_revision_id": {
+      "type": "integer"
+    },
+    
+    "revision_created": {
+      "type": "biginteger"
+    },
+    "status": {
+      "type": "boolean"
+    },
+    "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "changed": {
+      "type": "biginteger"
+    },
+    "revision_translation_affected": {
+      "type": "boolean"
+    },
+    "content_translation_source": {
+      "type": "string"
+    },
+    "content_translation_outdated": {
+      "type": "boolean"
+    },
+    "content_translation_created": {
+      "type": "biginteger"
+    },
+    "path_alias": {
+      "type": "string"
+    },
+    "path_pid": {
+      "type": "integer"
+    },
+    "field_order": {
+      "type": "integer"
+    },
+    "field_redirect_url": {
+      "type": "string"
+    },
+    "field_taxonomy_pim_id": {
+      "type": "string"
+    },
+    "field_infographics_image": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": ["images"]
+    },
+    "field_photography_infography_img": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "vid_id": {
+      "type": "uid"
+    },
+    "revision_user_id": {
+      "type": "uid"
+    },
+    "parent_virtual": {
+      "type": "string"
+    },
+    "content_translation_uid": {
+      "type": "uid"
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "national_executive_categories",
+  "info": {
+    "singularName": "national-executive-category",
+    "pluralName": "national-executive-categories",
+    "displayName": "National Executive Category",
+    "description": "Taxonomy for types of national executive content"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+    "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}
