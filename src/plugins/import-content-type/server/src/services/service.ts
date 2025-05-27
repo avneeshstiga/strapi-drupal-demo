@@ -326,11 +326,14 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
           continue;
         }
 
-        const data = handleRelation(refinedBaseUrl, relationshipData, strapiRelKey, includedResult);
-        strapi.log.info(
-          `relationship data found for strapi key: ${strapiRelKey}, drupal key: ${drupalRelKey}: ${JSON.stringify(data, null, 2)}`
+        handleRelation(refinedBaseUrl, relationshipData, strapiRelKey, includedResult).then(
+          (data) => {
+            strapi.log.info(
+              `relationship data found for strapi key: ${strapiRelKey}, drupal key: ${drupalRelKey}: ${JSON.stringify(data, null, 2)}`
+            );
+            strapiItem[strapiRelKey] = data;
+          }
         );
-        strapiItem[strapiRelKey] = data;
       }
 
       // Optionally, include the original Drupal id for reference
