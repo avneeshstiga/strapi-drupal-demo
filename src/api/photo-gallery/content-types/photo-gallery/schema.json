@@ -1,0 +1,95 @@
+{
+  "kind": "collectionType",
+  "collectionName": "photo_gallery",
+  "info": {
+    "singularName": "photo-gallery",
+    "pluralName": "photo-gallerys",
+    "displayName": "Photo Gallery",
+    "description": "Imported from Drupal 8: photo_gallery",
+    "drupalEndpoint": "photo_gallery"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "published": {
+      "type": "boolean",
+      "displayName": "Published"
+    },
+    "name": {
+      "type": "string",
+      "displayName": "Title"
+    },
+    "promote": {
+      "type": "boolean",
+      "displayName": "Promote"
+    },
+    "sticky": {
+      "type": "boolean",
+      "displayName": "Sticky"
+    },
+    "default_langcode": {
+      "type": "boolean",
+      "displayName": "Default Langcode"
+    },
+    "date_photo_gallery": {
+      "type": "string",
+      "displayName": "Date Photo Gallery"
+    },
+    "domain_all_affiliates": {
+      "type": "boolean",
+      "displayName": "Domain All Affiliates"
+    },
+    "meta_tags": {
+      "type": "string",
+      "displayName": "Meta Tags"
+    },
+    "node_joomla_id": {
+      "type": "string",
+      "displayName": "Node Joomla Id"
+    },
+    "node_pim_id": {
+      "type": "string",
+      "displayName": "Node Pim Id"
+    },
+    "photo_gallery_order": {
+      "type": "integer",
+      "displayName": "Photo Gallery Order"
+    },
+    "photo_gallery_url": {
+      "type": "string",
+      "displayName": "Photo Gallery Url"
+    },
+    "photo_latest_on_banner": {
+      "type": "json",
+      "displayName": "Photo Latest On Banner"
+    },
+    "photo_shorten_link": {
+      "type": "string",
+      "displayName": "Photo Shorten Link"
+    },
+    "drupal_id": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "displayName": "Drupal ID"
+    },
+    "leader": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::leaders.leaders"
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "archive_article": {
+      "type": "boolean"
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    }
+  }
+}
