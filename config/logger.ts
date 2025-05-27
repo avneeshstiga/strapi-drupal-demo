@@ -1,12 +1,12 @@
 "use strict";
 
-const { LoggingWinston } = require("@google-cloud/logging-winston");
-const winston = require("winston");
+import { LoggingWinston } from "@google-cloud/logging-winston";
+import winston from "winston";
 
 // Create Google Cloud Logging transport
 const loggingWinston = new LoggingWinston();
 
-module.exports = ({ env }) => ({
+export default ({ env }) => ({
   transports: [
     new winston.transports.Console({
       format: winston.format.simple(),
