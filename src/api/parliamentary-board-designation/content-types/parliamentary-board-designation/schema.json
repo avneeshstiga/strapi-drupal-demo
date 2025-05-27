@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "parliamentary_board_designations",
+  "info": {
+    "singularName": "parliamentary-board-designation",
+    "pluralName": "parliamentary-board-designations",
+    "displayName": "Parliamentary Board Designation",
+    "description": "Designations of individuals in the Parliamentary Board (e.g., Prime Minister)"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+   "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+   "description": {
+      "type": "blocks"
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+     "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "kind": "collectionType",
+  "collectionName": "lok_sabha_state_and_pc_listings",
+  "info": {
+    "singularName": "lok-sabha-state-and-pc-listing",
+    "pluralName": "lok-sabha-state-and-pc-listings",
+    "displayName": "Lok Sabha State and PC Listing",
+    "description": "State and Parliamentary Constituency listing (Lok Sabha)"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

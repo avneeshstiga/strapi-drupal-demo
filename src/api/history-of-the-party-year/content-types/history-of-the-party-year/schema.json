@@ -4,7 +4,8 @@
   "info": {
     "singularName": "history-of-the-party-year",
     "pluralName": "history-of-the-party-years",
-    "displayName": "History of the party Year"
+    "displayName": "History of the party Year",
+    "description": ""
   },
   "options": {
     "draftAndPublish": true

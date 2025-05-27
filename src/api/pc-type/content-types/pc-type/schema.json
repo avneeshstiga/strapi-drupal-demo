@@ -1,0 +1,46 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pc_types",
+  "info": {
+    "singularName": "pc-type",
+    "pluralName": "pc-types",
+    "displayName": "PC Type",
+    "description": "Parliamentary constituency types with optional state reference"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+    "field_taxonomy_pim_id": {
+      "type": "string"
+    },
+    "field_pc_type_states": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::state.state"
+    },
+     "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+    
+  }
+}

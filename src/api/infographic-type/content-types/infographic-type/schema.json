@@ -1,0 +1,50 @@
+{
+  "kind": "collectionType",
+  "collectionName": "infographic_types",
+  "info": {
+    "singularName": "infographic-type",
+    "pluralName": "infographic-types",
+    "displayName": "Infographic Type",
+    "description": "Infographic categories imported from Drupal"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+   "description": {
+      "type": "blocks"
+    },
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "field_redirect_url": {
+      "type": "string"
+    },
+    "field_taxonomy_pim_id": {
+      "type": "string"
+    },
+    "infographics_images": {
+      "type": "media",
+      "multiple": true,
+      "required": false
+    },
+    "photography_infography_image": {
+      "type": "media",
+      "multiple": false,
+      "required": false
+    },
+    "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

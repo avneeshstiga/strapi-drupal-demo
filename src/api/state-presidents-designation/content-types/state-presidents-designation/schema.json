@@ -1,0 +1,62 @@
+{
+  "kind": "collectionType",
+  "collectionName": "state_presidents_designations",
+  "info": {
+    "singularName": "state-presidents-designation",
+    "pluralName": "state-presidents-designations",
+    "displayName": "State Presidents Designation",
+    "description": "Designation types for state presidents and similar roles"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "name": {
+      "type": "string",
+      "required": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "description": {
+      "type": "blocks",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "default_langcode": {
+      "type": "boolean",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "url_alias": {
+      "type": "string",
+      "unique": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

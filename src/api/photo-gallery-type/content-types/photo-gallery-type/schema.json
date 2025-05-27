@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "photo_gallery_types",
+  "info": {
+    "singularName": "photo-gallery-type",
+    "pluralName": "photo-gallery-types",
+    "displayName": "Photo Gallery Type",
+    "description": "Categories for photo galleries (e.g. Events, Campaigns)"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+    "field_taxonomy_pim_id": {
+      "type": "string"
+    },
+     "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

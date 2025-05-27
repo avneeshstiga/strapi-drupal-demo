@@ -1,0 +1,34 @@
+{
+  "kind": "collectionType",
+  "collectionName": "loksabhamembers",
+  "info": {
+    "singularName": "loksabhamember",
+    "pluralName": "loksabhamembers",
+    "displayName": "Loksabhamember",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "member_name": {
+      "type": "string"
+    },
+    "member_seat": {
+      "type": "string"
+    },
+    "member_seat_state": {
+      "type": "string"
+    },
+    "member_pic": {
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ],
+      "type": "media",
+      "multiple": false
+    }
+  }
+}

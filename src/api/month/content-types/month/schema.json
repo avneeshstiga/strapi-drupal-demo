@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "months",
+  "info": {
+    "singularName": "month",
+    "pluralName": "months",
+    "displayName": "Month",
+    "description": "Taxonomy for calendar months"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+    "field_taxonomy_pim_id": {
+      "type": "string"
+    },
+    "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

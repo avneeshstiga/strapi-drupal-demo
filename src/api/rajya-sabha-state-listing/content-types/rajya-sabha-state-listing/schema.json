@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "rajya_sabha_state_listings",
+  "info": {
+    "singularName": "rajya-sabha-state-listing",
+    "pluralName": "rajya-sabha-state-listings",
+    "displayName": "Rajya Sabha State Listing",
+    "description": "List of Indian states used for Rajya Sabha member classification"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+   "description": {
+      "type": "blocks"
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+     "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}

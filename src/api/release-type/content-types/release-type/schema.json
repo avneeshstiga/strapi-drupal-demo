@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "release_types",
+  "info": {
+    "singularName": "release-type",
+    "pluralName": "release-types",
+    "displayName": "Release Type",
+    "description": "Types of releases (e.g., Foundation Day, press release types)"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "languages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::language.language"
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "blocks"
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+    "content_translation_source": {
+      "type": "string"
+    },
+    "field_taxonomy_pim_id": {
+      "type": "string"
+    },
+    "drupal_id": {
+      "type": "string"
+    }
+  }
+}
