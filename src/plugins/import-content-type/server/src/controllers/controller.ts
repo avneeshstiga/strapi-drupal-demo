@@ -499,14 +499,22 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
       // First, create admin users in Strapi's admin users table
       const adminUsersCreated = [];
+      const adminUsersUpdated = [];
       const adminUsersErrors = [];
 
-      // Helper function to safely extract value from Drupal field arrays
       const extractValue = (field, defaultValue = null) => {
         if (Array.isArray(field) && field.length > 0 && field[0].value !== undefined) {
           return field[0].value;
         }
         return defaultValue;
+      };
+
+      // Extract role UUIDs for admin user role assignment
+      const extractRoleUuids = (field) => {
+        if (Array.isArray(field)) {
+          return field.map((item) => item.target_uuid).filter((uuid) => uuid);
+        }
+        return [];
       };
 
       for (const drupalUser of drupalUsers) {
@@ -517,19 +525,17 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           const uuid = extractValue(drupalUser.uuid);
           const status = extractValue(drupalUser.status, true);
           const langcode = extractValue(drupalUser.langcode, 'en');
+          const roleUuids = extractRoleUuids(drupalUser.roles);
 
-          // Skip if no username or email
           if (!username || !email) {
             strapi.log.warn(`Skipping user creation - missing username or email for UUID: ${uuid}`);
             continue;
           }
 
-          // Split full name into first and last name
           const nameParts = fullName ? fullName.trim().split(' ') : [];
           const firstName = nameParts[0] || username || 'Unknown';
           const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
-          // Check if admin user already exists
           const existingUser = await strapi.db.query('admin::user').findOne({
             where: {
               $or: [{ username: username }, { email: email }],
@@ -537,19 +543,42 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           });
 
           if (existingUser) {
-            strapi.log.info(`Admin user already exists: ${username} (${email})`);
-            // Still add to created list for relationship mapping
-            adminUsersCreated.push({
-              id: existingUser.id,
-              username: existingUser.username,
-              email: existingUser.email,
-              drupalUuid: uuid,
-              isExisting: true,
+            strapi.log.info(`Admin user already exists, updating: ${username} (${email})`);
+
+            // Update existing admin user data
+            const updateData = {
+              firstname: firstName,
+              lastname: lastName,
+              username: username,
+              email: email,
+              isActive: status,
+              blocked: !status,
+              preferedLanguage: langcode,
+            };
+
+            // Update the admin user
+            const updatedAdminUser = await strapi.db.query('admin::user').update({
+              where: { id: existingUser.id },
+              data: updateData,
             });
+
+            adminUsersUpdated.push({
+              id: existingUser.id,
+              username: updatedAdminUser.username,
+              email: updatedAdminUser.email,
+              drupalUuid: uuid,
+              roleUuids: roleUuids,
+              isExisting: true,
+              action: 'updated',
+            });
+
+            strapi.log.info(
+              `Updated admin user: ${updatedAdminUser.username} (ID: ${existingUser.id})`
+            );
             continue;
           }
 
-          // Create admin user
+          // Create new admin user
           const adminUserData = {
             firstname: firstName,
             lastname: lastName,
@@ -558,7 +587,6 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             isActive: status,
             blocked: !status,
             preferedLanguage: langcode,
-            // Note: password will be auto-generated, user will need to reset it
           };
 
           const createdAdminUser = await strapi.db.query('admin::user').create({
@@ -570,7 +598,9 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             username: createdAdminUser.username,
             email: createdAdminUser.email,
             drupalUuid: uuid,
+            roleUuids: roleUuids,
             isExisting: false,
+            action: 'created',
           });
 
           strapi.log.info(
@@ -581,7 +611,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           const email = extractValue(drupalUser.mail);
           const identifier = username || email || 'unknown';
 
-          strapi.log.error(`Error creating admin user ${identifier}: ${adminError.message}`);
+          strapi.log.error(`Error processing admin user ${identifier}: ${adminError.message}`);
           adminUsersErrors.push({
             identifier,
             error: adminError.message,
@@ -589,37 +619,33 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
         }
       }
 
-      // Now update transformedUsers to include admin_user relationships
-      const transformedUsersWithRelations = transformedUsers.map((strapiUser) => {
-        // Find the corresponding admin user by drupal_id (uuid)
-        const matchingAdminUser = adminUsersCreated.find(
+      // Combine created and updated users for further processing
+      const allAdminUsers = [...adminUsersCreated, ...adminUsersUpdated];
+
+      // Add admin user relationships
+      const transformedUsersWithAdminRelations = transformedUsers.map((strapiUser) => {
+        const matchingAdminUser = allAdminUsers.find(
           (adminUser) => adminUser.drupalUuid === strapiUser.drupal_id
         );
 
         if (matchingAdminUser) {
           return {
             ...strapiUser,
-            admin_user: matchingAdminUser.id, // Create the relationship
+            admin_user: matchingAdminUser.id,
           };
         }
 
         return strapiUser;
       });
 
-      strapi.log.info(
-        `Updated ${transformedUsersWithRelations.length} user-admin entries with admin_user relationships`
-      );
-
-      // Resolve domain relations by mapping UUIDs to domain IDs
+      // Resolve domain relations
       strapi.log.info('Resolving domain relations...');
 
-      // Get all domains from Strapi to create UUID to ID mapping
       const allDomains = await strapi.entityService.findMany('api::domain.domain', {
         fields: ['id', 'bjp_uuid'],
-        limit: -1, // Get all domains
+        limit: -1,
       });
 
-      // Create UUID to ID mapping
       const domainUuidToIdMap = {};
       allDomains.forEach((domain) => {
         if (domain.bjp_uuid) {
@@ -631,69 +657,176 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
         `Found ${Object.keys(domainUuidToIdMap).length} domains for relation mapping`
       );
 
-      // Update users with domain relations
-      const transformedUsersWithDomainRelations = transformedUsersWithRelations.map(
+      // Resolve role relations
+      strapi.log.info('Resolving role relations...');
+
+      // Create UUID to ID mapping for roles
+      const roleUuidToIdMap = {};
+      // Note: In this function, we don't have roles imported, so this will be empty
+      // This is kept for consistency with the importBjpComplete function structure
+
+      strapi.log.info(`Found ${Object.keys(roleUuidToIdMap).length} roles for relation mapping`);
+
+      const transformedUsersWithDomainRelations = transformedUsersWithAdminRelations.map(
         (strapiUser) => {
           const userWithDomains: any = { ...strapiUser };
 
-          // Map domain access UUIDs to IDs
           if (strapiUser._domainAccessUuids && strapiUser._domainAccessUuids.length > 0) {
             const domainAccessIds = strapiUser._domainAccessUuids
               .map((uuid) => domainUuidToIdMap[uuid])
-              .filter((id) => id); // Remove undefined IDs
+              .filter((id) => id);
 
             if (domainAccessIds.length > 0) {
               userWithDomains.domain_access = domainAccessIds;
             }
           }
 
-          // Map domain admin UUIDs to IDs
           if (strapiUser._domainAdminUuids && strapiUser._domainAdminUuids.length > 0) {
             const domainAdminIds = strapiUser._domainAdminUuids
               .map((uuid) => domainUuidToIdMap[uuid])
-              .filter((id) => id); // Remove undefined IDs
+              .filter((id) => id);
 
             if (domainAdminIds.length > 0) {
               userWithDomains.domain_admin = domainAdminIds;
             }
           }
 
-          // Remove temporary UUID arrays
           delete userWithDomains._domainAccessUuids;
           delete userWithDomains._domainAdminUuids;
+          delete userWithDomains._roleUuids;
 
           return userWithDomains;
         }
       );
 
-      strapi.log.info(
-        `Updated ${transformedUsersWithDomainRelations.length} user-admin entries with domain relationships`
-      );
+      // Assign roles to admin users (both created and updated)
+      strapi.log.info('Assigning roles to admin users...');
 
-      // Import the transformed data with relationships using the existing service
-      const result = await strapi
-        .plugin('import-content-type')
-        .service('service')
-        .importData(contentType, transformedUsersWithDomainRelations);
+      const roleAssignmentResults = {
+        successful: 0,
+        failed: 0,
+        errors: [],
+      };
+
+      for (const adminUser of allAdminUsers) {
+        try {
+          if (adminUser.roleUuids && adminUser.roleUuids.length > 0) {
+            // Map role UUIDs to role IDs
+            const roleIds = adminUser.roleUuids
+              .map((uuid) => roleUuidToIdMap[uuid])
+              .filter((id) => id);
+
+            if (roleIds.length > 0) {
+              // Update admin user with roles (this works for both new and existing users)
+              await strapi.db.query('admin::user').update({
+                where: { id: adminUser.id },
+                data: {
+                  roles: roleIds,
+                },
+              });
+
+              roleAssignmentResults.successful++;
+              strapi.log.info(
+                `Assigned ${roleIds.length} roles to admin user: ${adminUser.username} (ID: ${adminUser.id}) - ${adminUser.action}`
+              );
+            } else {
+              strapi.log.warn(
+                `No matching roles found for admin user: ${adminUser.username} (UUIDs: ${adminUser.roleUuids.join(', ')})`
+              );
+            }
+          }
+        } catch (roleAssignError) {
+          roleAssignmentResults.failed++;
+          roleAssignmentResults.errors.push({
+            userId: adminUser.id,
+            username: adminUser.username,
+            error: roleAssignError.message,
+          });
+          strapi.log.error(
+            `Error assigning roles to admin user ${adminUser.username}: ${roleAssignError.message}`
+          );
+        }
+      }
+
+      // Import/Update users in user-admin content type
+      strapi.log.info('Processing user-admin content type entries...');
+
+      // For user-admin content type, we need to handle create/update based on drupal_id
+      const userAdminResults = {
+        created: 0,
+        updated: 0,
+        errors: [],
+      };
+
+      for (const userData of transformedUsersWithDomainRelations) {
+        try {
+          // Check if user-admin entry already exists by drupal_id
+          const existingUserAdmin = await strapi.entityService.findMany(
+            'api::user-admin.user-admin',
+            {
+              filters: {
+                drupal_id: userData.drupal_id,
+              },
+              limit: 1,
+            }
+          );
+
+          if (existingUserAdmin && existingUserAdmin.length > 0) {
+            // Update existing user-admin entry
+            const updatedEntry = await strapi.entityService.update(
+              'api::user-admin.user-admin',
+              existingUserAdmin[0].id,
+              {
+                data: userData,
+              }
+            );
+            userAdminResults.updated++;
+            strapi.log.info(
+              `Updated user-admin entry for: ${userData.username} (ID: ${existingUserAdmin[0].id})`
+            );
+          } else {
+            // Create new user-admin entry
+            const createdEntry = await strapi.entityService.create('api::user-admin.user-admin', {
+              data: userData,
+            });
+            userAdminResults.created++;
+            strapi.log.info(
+              `Created user-admin entry for: ${userData.username} (ID: ${createdEntry.id})`
+            );
+          }
+        } catch (userAdminError) {
+          userAdminResults.errors.push({
+            username: userData.username,
+            drupal_id: userData.drupal_id,
+            error: userAdminError.message,
+          });
+          strapi.log.error(
+            `Error processing user-admin entry for ${userData.username}: ${userAdminError.message}`
+          );
+        }
+      }
 
       const endTime = Date.now();
-      const duration = (endTime - startTime) / 1000 / 60;
+      const duration = (endTime - startTime) / 1000;
 
       return ctx.send({
         success: true,
-        message: `Successfully imported Drupal users into ${contentType} and created admin users`,
+        message: 'Successfully imported Drupal users into user-admin content type',
         sourceUrl: 'https://bjp.org/user-export-strapi',
         fetchedCount: drupalUsers.length,
         processedCount: drupalUsers.length,
         transformedCount: transformedUsersWithDomainRelations.length,
-        contentTypeResult: result,
         adminUsers: {
           created: adminUsersCreated.length,
+          updated: adminUsersUpdated.length,
           errors: adminUsersErrors.length,
           createdUsers: adminUsersCreated,
+          updatedUsers: adminUsersUpdated,
           errorDetails: adminUsersErrors,
         },
-        duration: `${duration.toFixed(2)} minutes`,
+        userAdminContentType: userAdminResults,
+        roleAssignments: roleAssignmentResults,
+        duration: `${duration.toFixed(2)} seconds`,
       });
     } catch (error) {
       strapi.log.error(`importDrupalUserInStrapi error: ${error.message}`);
@@ -1175,6 +1308,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
           // Create admin users (reuse logic from importDrupalUserInStrapi)
           const adminUsersCreated = [];
+          const adminUsersUpdated = [];
           const adminUsersErrors = [];
 
           const extractValue = (field, defaultValue = null) => {
@@ -1220,18 +1354,42 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
               });
 
               if (existingUser) {
-                strapi.log.info(`Admin user already exists: ${username} (${email})`);
-                adminUsersCreated.push({
+                strapi.log.info(`Admin user already exists, updating: ${username} (${email})`);
+
+                // Update existing admin user data
+                const updateData = {
+                  firstname: firstName,
+                  lastname: lastName,
+                  username: username,
+                  email: email,
+                  isActive: status,
+                  blocked: !status,
+                  preferedLanguage: langcode,
+                };
+
+                // Update the admin user
+                const updatedAdminUser = await strapi.db.query('admin::user').update({
+                  where: { id: existingUser.id },
+                  data: updateData,
+                });
+
+                adminUsersUpdated.push({
                   id: existingUser.id,
-                  username: existingUser.username,
-                  email: existingUser.email,
+                  username: updatedAdminUser.username,
+                  email: updatedAdminUser.email,
                   drupalUuid: uuid,
                   roleUuids: roleUuids,
                   isExisting: true,
+                  action: 'updated',
                 });
+
+                strapi.log.info(
+                  `Updated admin user: ${updatedAdminUser.username} (ID: ${existingUser.id})`
+                );
                 continue;
               }
 
+              // Create new admin user
               const adminUserData = {
                 firstname: firstName,
                 lastname: lastName,
@@ -1253,6 +1411,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
                 drupalUuid: uuid,
                 roleUuids: roleUuids,
                 isExisting: false,
+                action: 'created',
               });
 
               strapi.log.info(
@@ -1263,7 +1422,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
               const email = extractValue(drupalUser.mail);
               const identifier = username || email || 'unknown';
 
-              strapi.log.error(`Error creating admin user ${identifier}: ${adminError.message}`);
+              strapi.log.error(`Error processing admin user ${identifier}: ${adminError.message}`);
               adminUsersErrors.push({
                 identifier,
                 error: adminError.message,
@@ -1271,9 +1430,12 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             }
           }
 
+          // Combine created and updated users for further processing
+          const allAdminUsers = [...adminUsersCreated, ...adminUsersUpdated];
+
           // Add admin user relationships
           const transformedUsersWithAdminRelations = transformedUsers.map((strapiUser) => {
-            const matchingAdminUser = adminUsersCreated.find(
+            const matchingAdminUser = allAdminUsers.find(
               (adminUser) => adminUser.drupalUuid === strapiUser.drupal_id
             );
 
@@ -1355,7 +1517,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             }
           );
 
-          // Assign roles to admin users
+          // Assign roles to admin users (both created and updated)
           strapi.log.info('Assigning roles to admin users...');
 
           const roleAssignmentResults = {
@@ -1364,7 +1526,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             errors: [],
           };
 
-          for (const adminUser of adminUsersCreated) {
+          for (const adminUser of allAdminUsers) {
             try {
               if (adminUser.roleUuids && adminUser.roleUuids.length > 0) {
                 // Map role UUIDs to role IDs
@@ -1373,7 +1535,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
                   .filter((id) => id);
 
                 if (roleIds.length > 0) {
-                  // Update admin user with roles
+                  // Update admin user with roles (this works for both new and existing users)
                   await strapi.db.query('admin::user').update({
                     where: { id: adminUser.id },
                     data: {
@@ -1383,7 +1545,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
 
                   roleAssignmentResults.successful++;
                   strapi.log.info(
-                    `Assigned ${roleIds.length} roles to admin user: ${adminUser.username} (ID: ${adminUser.id})`
+                    `Assigned ${roleIds.length} roles to admin user: ${adminUser.username} (ID: ${adminUser.id}) - ${adminUser.action}`
                   );
                 } else {
                   strapi.log.warn(
@@ -1404,21 +1566,78 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             }
           }
 
-          // Import users with all relations
-          const userResult = await strapi
-            .plugin('import-content-type')
-            .service('service')
-            .importData('user-admin', transformedUsersWithDomainRelations);
+          // Import/Update users in user-admin content type
+          strapi.log.info('Processing user-admin content type entries...');
+
+          // For user-admin content type, we need to handle create/update based on drupal_id
+          const userAdminResults = {
+            created: 0,
+            updated: 0,
+            errors: [],
+          };
+
+          for (const userData of transformedUsersWithDomainRelations) {
+            try {
+              // Check if user-admin entry already exists by drupal_id
+              const existingUserAdmin = await strapi.entityService.findMany(
+                'api::user-admin.user-admin',
+                {
+                  filters: {
+                    drupal_id: userData.drupal_id,
+                  },
+                  limit: 1,
+                }
+              );
+
+              if (existingUserAdmin && existingUserAdmin.length > 0) {
+                // Update existing user-admin entry
+                const updatedEntry = await strapi.entityService.update(
+                  'api::user-admin.user-admin',
+                  existingUserAdmin[0].id,
+                  {
+                    data: userData,
+                  }
+                );
+                userAdminResults.updated++;
+                strapi.log.info(
+                  `Updated user-admin entry for: ${userData.username} (ID: ${existingUserAdmin[0].id})`
+                );
+              } else {
+                // Create new user-admin entry
+                const createdEntry = await strapi.entityService.create(
+                  'api::user-admin.user-admin',
+                  {
+                    data: userData,
+                  }
+                );
+                userAdminResults.created++;
+                strapi.log.info(
+                  `Created user-admin entry for: ${userData.username} (ID: ${createdEntry.id})`
+                );
+              }
+            } catch (userAdminError) {
+              userAdminResults.errors.push({
+                username: userData.username,
+                drupal_id: userData.drupal_id,
+                error: userAdminError.message,
+              });
+              strapi.log.error(
+                `Error processing user-admin entry for ${userData.username}: ${userAdminError.message}`
+              );
+            }
+          }
 
           results.users = {
             fetchedCount: originalUserCount,
             processedCount: allDrupalUsers.length,
             transformedCount: transformedUsersWithDomainRelations.length,
-            result: userResult,
+            result: userAdminResults,
             adminUsers: {
               created: adminUsersCreated.length,
+              updated: adminUsersUpdated.length,
               errors: adminUsersErrors.length,
               createdUsers: adminUsersCreated,
+              updatedUsers: adminUsersUpdated,
               errorDetails: adminUsersErrors,
             },
             roleAssignments: roleAssignmentResults,
@@ -1426,7 +1645,13 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           };
 
           strapi.log.info(
-            `Successfully imported ${transformedUsersWithDomainRelations.length} users with domain and role relations from ${currentPage} pages (${originalUserCount} total fetched)`
+            `Successfully processed ${transformedUsersWithDomainRelations.length} users with domain and role relations from ${currentPage} pages (${originalUserCount} total fetched)`
+          );
+          strapi.log.info(
+            `Admin users - Created: ${adminUsersCreated.length}, Updated: ${adminUsersUpdated.length}`
+          );
+          strapi.log.info(
+            `User-admin entries - Created: ${userAdminResults.created}, Updated: ${userAdminResults.updated}`
           );
         }
       } catch (userError) {
@@ -1443,6 +1668,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
         rolesCreated: results.roles?.created || 0,
         usersImported: results.users?.result?.created || 0,
         adminUsersCreated: results.users?.adminUsers?.created || 0,
+        adminUsersUpdated: results.users?.adminUsers?.updated || 0,
         roleAssignmentsSuccessful: results.users?.roleAssignments?.successful || 0,
         pagesProcessed: results.users?.pagesProcessed || 0,
       };
