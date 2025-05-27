@@ -16,12 +16,10 @@
     }
   },
   "attributes": {
-    "state_highlight": {
-      "type": "string"
-    },
     "name": {
       "type": "string",
-      "required": true
+      "required": true,
+      "maxLength": 60
     },
     "languages": {
       "type": "relation",
@@ -35,7 +33,8 @@
       "type": "string"
     },
     "taxonomy_pim_id": {
-      "type": "string"
+      "type": "string",
+      "maxLength": 60
     },
     "drupal_published": {
       "type": "boolean"
@@ -48,6 +47,12 @@
       "relation": "manyToOne",
       "target": "api::state.state",
       "inversedBy": "ac_types"
+    },
+    "state_highlight": {
+      "type": "component",
+      "repeatable": false,
+      "component": "shared.highlight-state",
+      "required": true
     }
   }
 }
