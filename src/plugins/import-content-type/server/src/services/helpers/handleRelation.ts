@@ -1,13 +1,9 @@
 import { getImageUrlFromIncluded } from '../../utils/media';
 import { findDrupalRelationshipData } from '../../utils/strapi-queries';
 
-const handleGenericRelation = async (relationshipData, strapiRelKey): Promise<number> => {
-  try {
-    const id = await findDrupalRelationshipData(relationshipData.id, strapiRelKey);
-    return id;
-  } catch {
-    return relationshipData.id as number;
-  }
+const handleGenericRelation = async (relationshipData, strapiRelKey): Promise<number | null> => {
+  const id = await findDrupalRelationshipData(relationshipData.id, strapiRelKey);
+  return id;
 };
 
 const handleRelationsBasedOnType = async (
