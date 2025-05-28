@@ -69,7 +69,7 @@ export const downloadImage = async (url: string, contentType: string) => {
     // get filename from url
     const urlPath = validatedUrl.pathname;
     const extension = path.extname(urlPath) || '.jpg'; // Default to .jpg if no extension
-    const name = convertSpaceToChar(path.basename(urlPath, extension), '$');
+    const name = path.basename(urlPath, extension);
     const filename = `${name}${extension}`;
 
     const folderId = await handleFolder(url);

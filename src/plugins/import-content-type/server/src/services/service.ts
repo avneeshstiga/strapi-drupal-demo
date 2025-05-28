@@ -164,8 +164,6 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       totalRecords: data.length,
       successful: 0,
       failed: 0,
-      processedImages: 0,
-      skippedImages: 0,
       errors: [] as { index: number; error: any }[],
       failedRecords: [] as any[],
     };
@@ -306,42 +304,46 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
   ) {
     // Map Drupal JSON:API data to Strapi content-type format, including relations
     // First, map all items and resolve all promises
-    return drupalData.map((item) => {
-      const strapiItem: Record<string, any> = {};
+    return Promise.all(
+      drupalData.map(async (item) => {
+        const strapiItem: Record<string, any> = {};
 
-      // Map fields
-      for (const [strapiField, drupalField] of Object.entries(fieldsMapping)) {
-        strapiItem[strapiField] = item.attributes?.[drupalField as string];
-      }
-
-      // Map relationships
-      for (const [strapiRelKey, drupalRelKey] of Object.entries(relationsMapping)) {
-        const relationshipData = item.relationships?.[drupalRelKey as string]?.data;
-
-        if (!relationshipData) {
-          strapiItem[strapiRelKey] = null;
-          strapi.log.info(
-            `No relationship data found for strapi key: ${strapiRelKey}, drupal key: ${drupalRelKey}`
-          );
-          continue;
+        // Map fields
+        for (const [strapiField, drupalField] of Object.entries(fieldsMapping)) {
+          strapiItem[strapiField] = item.attributes?.[drupalField as string];
         }
 
-        handleRelation(refinedBaseUrl, relationshipData, strapiRelKey, includedResult).then(
-          (data) => {
+        // Map relationships
+        for (const [strapiRelKey, drupalRelKey] of Object.entries(relationsMapping)) {
+          const relationshipData = item.relationships?.[drupalRelKey as string]?.data;
+
+          if (!relationshipData) {
+            strapiItem[strapiRelKey] = null;
             strapi.log.info(
-              `relationship data found for strapi key: ${strapiRelKey}, drupal key: ${drupalRelKey}: ${JSON.stringify(data, null, 2)}`
+              `No relationship data found for strapi key: ${strapiRelKey}, drupal key: ${drupalRelKey}`
             );
-            strapiItem[strapiRelKey] = data;
+            continue;
           }
-        );
-      }
 
-      // Optionally, include the original Drupal id for reference
-      strapiItem['drupal_id'] = item.id;
-      strapi.log.info(`strapiItem: ${JSON.stringify(strapiItem, null, 2)}`);
+          const data = await handleRelation(
+            refinedBaseUrl,
+            relationshipData,
+            strapiRelKey,
+            includedResult
+          );
+          strapi.log.info(
+            `relationship data found for strapi key: ${strapiRelKey}, drupal key: ${drupalRelKey}: ${JSON.stringify(data, null, 2)}`
+          );
+          strapiItem[strapiRelKey] = data;
+        }
 
-      return strapiItem;
-    });
+        // Optionally, include the original Drupal id for reference
+        strapiItem['drupal_id'] = item.id;
+        strapi.log.info(`strapiItem: ${JSON.stringify(strapiItem, null, 2)}`);
+
+        return strapiItem;
+      })
+    );
   },
 });
 
