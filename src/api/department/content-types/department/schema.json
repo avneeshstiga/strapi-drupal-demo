@@ -1,10 +1,10 @@
 {
   "kind": "collectionType",
-  "collectionName": "election_format_types",
+  "collectionName": "departments",
   "info": {
-    "singularName": "election-format-type",
-    "pluralName": "election-format-types",
-    "displayName": "Election Format Type"
+    "singularName": "department",
+    "pluralName": "departments",
+    "displayName": "Departments"
   },
   "options": {
     "draftAndPublish": true
@@ -52,6 +52,11 @@
     },
     "weight": {
       "type": "integer"
+    },
+    "department_image": {
+      "allowedTypes": ["images", "files"],
+      "type": "media",
+      "multiple": false
     }
   }
 }
