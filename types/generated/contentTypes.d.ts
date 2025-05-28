@@ -373,49 +373,6 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiAboutAbout extends Struct.SingleTypeSchema {
-  collectionName: 'abouts';
-  info: {
-    description: 'Write about yourself and the content you create';
-    displayName: 'About';
-    pluralName: 'abouts';
-    singularName: 'about';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  pluginOptions: {
-    i18n: {
-      localized: true;
-    };
-  };
-  attributes: {
-    blocks: Schema.Attribute.DynamicZone<
-      ['shared.media', 'shared.quote', 'shared.rich-text', 'shared.slider']
-    > &
-      Schema.Attribute.SetPluginOptions<{
-        i18n: {
-          localized: true;
-        };
-      }>;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String;
-    localizations: Schema.Attribute.Relation<'oneToMany', 'api::about.about'>;
-    publishedAt: Schema.Attribute.DateTime;
-    title: Schema.Attribute.String &
-      Schema.Attribute.SetPluginOptions<{
-        i18n: {
-          localized: true;
-        };
-      }>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
 export interface ApiAcTypeAcType extends Struct.CollectionTypeSchema {
   collectionName: 'ac_types';
   info: {
@@ -477,7 +434,7 @@ export interface ApiArticleTypeArticleType extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    description: Schema.Attribute.Text;
+    description: Schema.Attribute.Blocks;
     drupal_id: Schema.Attribute.String;
     drupal_published: Schema.Attribute.Boolean;
     languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
@@ -486,53 +443,20 @@ export interface ApiArticleTypeArticleType extends Struct.CollectionTypeSchema {
       'oneToMany',
       'api::article-type.article-type'
     >;
-    name: Schema.Attribute.String;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
     publishedAt: Schema.Attribute.DateTime;
-    taxonomy_pim_id: Schema.Attribute.String;
+    taxonomy_pim_id: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     url_alias: Schema.Attribute.String;
-  };
-}
-
-export interface ApiArticleArticle extends Struct.CollectionTypeSchema {
-  collectionName: 'articles';
-  info: {
-    description: 'Create your blog content';
-    displayName: 'Article';
-    pluralName: 'articles';
-    singularName: 'article';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    article_images: Schema.Attribute.Media<
-      'images' | 'files' | 'videos' | 'audios',
-      true
-    >;
-    cover: Schema.Attribute.Media<'images' | 'files' | 'videos'>;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    description: Schema.Attribute.Text &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 80;
-      }>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::article.article'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    seo: Schema.Attribute.Component<'shared.seo', false>;
-    slug: Schema.Attribute.UID<'title'>;
-    title: Schema.Attribute.String & Schema.Attribute.Required;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
   };
 }
 
@@ -554,10 +478,7 @@ export interface ApiBjpGovernedStateBjpGovernedState
     };
   };
   attributes: {
-    bjp_governed_state_images: Schema.Attribute.Media<
-      'images' | 'files',
-      true
-    > &
+    bjp_governed_state_images: Schema.Attribute.Media<'images' | 'files'> &
       Schema.Attribute.Required &
       Schema.Attribute.SetPluginOptions<{
         i18n: {
@@ -570,7 +491,7 @@ export interface ApiBjpGovernedStateBjpGovernedState
     description: Schema.Attribute.Blocks;
     domain_url: Schema.Attribute.String;
     drupal_id: Schema.Attribute.String;
-    historical_monuments: Schema.Attribute.Media<'images' | 'files', true>;
+    historical_monuments: Schema.Attribute.Media<'images' | 'files'>;
     languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
     locale: Schema.Attribute.String;
     localizations: Schema.Attribute.Relation<
@@ -590,8 +511,7 @@ export interface ApiBjpGovernedStateBjpGovernedState
     publishedAt: Schema.Attribute.DateTime;
     state_highlight: Schema.Attribute.String & Schema.Attribute.Required;
     state_website_home_logo: Schema.Attribute.Media<
-      'images' | 'files' | 'videos' | 'audios',
-      true
+      'images' | 'files' | 'videos' | 'audios'
     >;
     state_website_home_logo_hi: Schema.Attribute.Media<'images' | 'files'>;
     state_website_inner_logo: Schema.Attribute.Media<'images' | 'files'>;
@@ -610,6 +530,7 @@ export interface ApiBjpGovernedStateBjpGovernedState
 export interface ApiBjpLiveTagBjpLiveTag extends Struct.CollectionTypeSchema {
   collectionName: 'bjp_live_tags';
   info: {
+    description: '';
     displayName: 'BJP Live Tags';
     pluralName: 'bjp-live-tags';
     singularName: 'bjp-live-tag';
@@ -621,7 +542,7 @@ export interface ApiBjpLiveTagBjpLiveTag extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    description: Schema.Attribute.Text;
+    description: Schema.Attribute.Blocks;
     drupal_id: Schema.Attribute.String;
     drupal_published: Schema.Attribute.Boolean;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
@@ -655,7 +576,7 @@ export interface ApiBudgetGlanceTypeBudgetGlanceType
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    description: Schema.Attribute.Text;
+    description: Schema.Attribute.Blocks;
     drupal_id: Schema.Attribute.String;
     drupal_published: Schema.Attribute.Boolean;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
@@ -980,6 +901,40 @@ export interface ApiDepartmentTypeDepartmentType
   };
 }
 
+export interface ApiDesignationDesignation extends Struct.CollectionTypeSchema {
+  collectionName: 'designations';
+  info: {
+    description: 'Designation taxonomy structure';
+    displayName: 'Designation';
+    pluralName: 'designations';
+    singularName: 'designation';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::designation.designation'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
 export interface ApiDomainDomain extends Struct.CollectionTypeSchema {
   collectionName: 'domains';
   info: {
@@ -1115,7 +1070,7 @@ export interface ApiGlobalGlobal extends Struct.SingleTypeSchema {
     singularName: 'global';
   };
   options: {
-    draftAndPublish: false;
+    draftAndPublish: true;
   };
   attributes: {
     createdAt: Schema.Attribute.DateTime;
@@ -1142,6 +1097,7 @@ export interface ApiHistoryOfThePartyYearHistoryOfThePartyYear
   extends Struct.CollectionTypeSchema {
   collectionName: 'history_of_the_party_years';
   info: {
+    description: '';
     displayName: 'History of the party Year';
     pluralName: 'history-of-the-party-years';
     singularName: 'history-of-the-party-year';
@@ -1168,6 +1124,109 @@ export interface ApiHistoryOfThePartyYearHistoryOfThePartyYear
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     url_alias: Schema.Attribute.String;
+  };
+}
+
+export interface ApiInfographicTypeInfographicType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'infographic_types';
+  info: {
+    description: 'Infographic categories imported from Drupal';
+    displayName: 'Infographic Type';
+    pluralName: 'infographic-types';
+    singularName: 'infographic-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    field_redirect_url: Schema.Attribute.String;
+    field_taxonomy_pim_id: Schema.Attribute.String;
+    infographics_images: Schema.Attribute.Media<undefined, true>;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::infographic-type.infographic-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    photography_infography_image: Schema.Attribute.Media;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiInterestInterest extends Struct.CollectionTypeSchema {
+  collectionName: 'interests';
+  info: {
+    description: '';
+    displayName: 'interest';
+    pluralName: 'interests';
+    singularName: 'interest';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    drupal_id: Schema.Attribute.String;
+    interested_gender: Schema.Attribute.String & Schema.Attribute.Required;
+    Interested_topic: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::interest.interest'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiJourneyYearJourneyYear extends Struct.CollectionTypeSchema {
+  collectionName: 'journey_years';
+  info: {
+    description: 'Year values used in the BJP Journey taxonomy';
+    displayName: 'Journey Year';
+    pluralName: 'journey-years';
+    singularName: 'journey-year';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::journey-year.journey-year'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
   };
 }
 
@@ -1199,11 +1258,1086 @@ export interface ApiLanguageLanguage extends Struct.CollectionTypeSchema {
       'api::language.language'
     > &
       Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiLeaderTypeLeaderType extends Struct.CollectionTypeSchema {
+  collectionName: 'leader_types';
+  info: {
+    description: 'Leader classification from Drupal';
+    displayName: 'Leader Type';
+    pluralName: 'leader-types';
+    singularName: 'leader-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::leader-type.leader-type'
+    > &
+      Schema.Attribute.Private;
     name: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiLeadersTypeLeadersType extends Struct.CollectionTypeSchema {
+  collectionName: 'leaders_types';
+  info: {
+    description: 'Categorization of political leadership roles';
+    displayName: 'Leaders Type';
+    pluralName: 'leaders-types';
+    singularName: 'leaders-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::leaders-type.leaders-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiLeadersLeaders extends Struct.CollectionTypeSchema {
+  collectionName: 'leaders';
+  info: {
+    description: 'Imported from Drupal 8: leaders';
+    displayName: 'Leaders';
+    drupalEndpoint: 'leaders';
+    pluralName: 'leaderss';
+    singularName: 'leaders';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    article_archive: Schema.Attribute.JSON;
+    background_image_color: Schema.Attribute.String;
+    body: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    date_of_birth: Schema.Attribute.String;
+    date_of_death: Schema.Attribute.String;
+    default_langcode: Schema.Attribute.Boolean;
+    domain_all_affiliates: Schema.Attribute.Boolean;
+    drupal_id: Schema.Attribute.String & Schema.Attribute.Unique;
+    duration: Schema.Attribute.JSON;
+    election_corner_leader_ext: Schema.Attribute.String;
+    email: Schema.Attribute.String;
+    email_id: Schema.Attribute.JSON;
+    ios_app_link: Schema.Attribute.String;
+    is_alive: Schema.Attribute.String;
+    leader_address: Schema.Attribute.JSON;
+    leader_banner_caption: Schema.Attribute.String;
+    leader_contact_no: Schema.Attribute.JSON;
+    leader_facebook: Schema.Attribute.String;
+    leader_instagram: Schema.Attribute.String;
+    leader_mobile_app: Schema.Attribute.String;
+    leader_twitter: Schema.Attribute.String;
+    leader_website: Schema.Attribute.String;
+    leader_youtube: Schema.Attribute.String;
+    leaders_is_mp: Schema.Attribute.String;
+    leaders_shorten_link: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::leaders.leaders'
+    > &
+      Schema.Attribute.Private;
+    lok_sabha_and_rajya_sabha: Schema.Attribute.String;
+    meta_tags: Schema.Attribute.String;
+    node_pim_id: Schema.Attribute.String;
+    parliamentary_twitter: Schema.Attribute.String;
+    promote: Schema.Attribute.Boolean;
+    published: Schema.Attribute.Boolean;
+    publishedAt: Schema.Attribute.DateTime;
+    sticky: Schema.Attribute.Boolean;
+    sub_title: Schema.Attribute.String;
+    template_selection_option: Schema.Attribute.String;
+    title: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    weight: Schema.Attribute.Integer;
+  };
+}
+
+export interface ApiLokSabhaStateAndPcListingLokSabhaStateAndPcListing
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'lok_sabha_state_and_pc_listings';
+  info: {
+    description: 'State and Parliamentary Constituency listing (Lok Sabha)';
+    displayName: 'Lok Sabha State and PC Listing';
+    pluralName: 'lok-sabha-state-and-pc-listings';
+    singularName: 'lok-sabha-state-and-pc-listing';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::lok-sabha-state-and-pc-listing.lok-sabha-state-and-pc-listing'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiLoksabhamemberLoksabhamember
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'loksabhamembers';
+  info: {
+    description: '';
+    displayName: 'Loksabhamember';
+    pluralName: 'loksabhamembers';
+    singularName: 'loksabhamember';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::loksabhamember.loksabhamember'
+    > &
+      Schema.Attribute.Private;
+    member_name: Schema.Attribute.String;
+    member_pic: Schema.Attribute.Media<
+      'images' | 'files' | 'videos' | 'audios'
+    >;
+    member_seat: Schema.Attribute.String;
+    member_seat_state: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiManifestoLanguageManifestoLanguage
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'manifesto_languages';
+  info: {
+    description: 'Languages available for manifestos';
+    displayName: 'Manifesto Language';
+    pluralName: 'manifesto-languages';
+    singularName: 'manifesto-language';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::manifesto-language.manifesto-language'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiMemberTypeMemberType extends Struct.CollectionTypeSchema {
+  collectionName: 'member_types';
+  info: {
+    description: 'Drupal taxonomy: Member Type';
+    displayName: 'Member Type';
+    pluralName: 'member-types';
+    singularName: 'member-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::member-type.member-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiMicrositeInforgarphicTypeMicrositeInforgarphicType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'microsite_inforgarphic_types';
+  info: {
+    description: 'Taxonomy for microsite infographic categories';
+    displayName: 'Microsite Infographic Type';
+    pluralName: 'microsite-inforgarphic-types';
+    singularName: 'microsite-inforgarphic-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    field_microsite_category_image: Schema.Attribute.Media;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::microsite-inforgarphic-type.microsite-inforgarphic-type'
+    > &
+      Schema.Attribute.Private;
+    metatag: Schema.Attribute.JSON;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiMinisterTypeMinisterType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'minister_types';
+  info: {
+    description: 'Taxonomy to categorize types of ministers';
+    displayName: 'Minister Type';
+    pluralName: 'minister-types';
+    singularName: 'minister-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::minister-type.minister-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiMinistryMinistry extends Struct.CollectionTypeSchema {
+  collectionName: 'ministries';
+  info: {
+    description: 'Government ministries taxonomy';
+    displayName: 'Ministry';
+    pluralName: 'ministries';
+    singularName: 'ministry';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::ministry.ministry'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiMonthMonth extends Struct.CollectionTypeSchema {
+  collectionName: 'months';
+  info: {
+    description: 'Taxonomy for calendar months';
+    displayName: 'Month';
+    pluralName: 'months';
+    singularName: 'month';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    field_taxonomy_pim_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::month.month'> &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiMorchaTypeMorchaType extends Struct.CollectionTypeSchema {
+  collectionName: 'morcha_types';
+  info: {
+    description: 'Types of Morcha such as Kisan Morcha';
+    displayName: 'Morcha Type';
+    pluralName: 'morcha-types';
+    singularName: 'morcha-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::morcha-type.morcha-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiNationalExecutiveCategoryNationalExecutiveCategory
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'national_executive_categories';
+  info: {
+    description: 'Taxonomy for types of national executive content';
+    displayName: 'National Executive Category';
+    pluralName: 'national-executive-categories';
+    singularName: 'national-executive-category';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::national-executive-category.national-executive-category'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiNationalExecutiveYearNationalExecutiveYear
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'national_executive_years';
+  info: {
+    description: 'Yearly taxonomy for National Executive Events';
+    displayName: 'National Executive Year';
+    pluralName: 'national-executive-years';
+    singularName: 'national-executive-year';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::national-executive-year.national-executive-year'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiNationalGeneralSecretaryCategNationalGeneralSecretaryCateg
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'national_general_secretary_categs';
+  info: {
+    description: 'National General Secretary Category taxonomy';
+    displayName: 'National General Secretary Categ';
+    pluralName: 'national-general-secretary-categs';
+    singularName: 'national-general-secretary-categ';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::national-general-secretary-categ.national-general-secretary-categ'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiOrganisationDesignationOrganisationDesignation
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'organisation_designations';
+  info: {
+    description: 'Organisation Designation similar to Drupal taxonomy';
+    displayName: 'Organisation Designation';
+    pluralName: 'organisation-designations';
+    singularName: 'organisation-designation';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::organisation-designation.organisation-designation'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiParliamentaryBoardDesignationParliamentaryBoardDesignation
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'parliamentary_board_designations';
+  info: {
+    description: 'Designations of individuals in the Parliamentary Board (e.g., Prime Minister)';
+    displayName: 'Parliamentary Board Designation';
+    pluralName: 'parliamentary-board-designations';
+    singularName: 'parliamentary-board-designation';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::parliamentary-board-designation.parliamentary-board-designation'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiPcTypePcType extends Struct.CollectionTypeSchema {
+  collectionName: 'pc_types';
+  info: {
+    description: 'Parliamentary constituency types with optional state reference';
+    displayName: 'PC Type';
+    pluralName: 'pc-types';
+    singularName: 'pc-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    field_pc_type_states: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::state.state'
+    >;
+    field_taxonomy_pim_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::pc-type.pc-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiPhaseTypePhaseType extends Struct.CollectionTypeSchema {
+  collectionName: 'phase_types';
+  info: {
+    description: 'Election or campaign phase types (e.g., Phase 1, Phase 2)';
+    displayName: 'Phase Type';
+    pluralName: 'phase-types';
+    singularName: 'phase-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  pluginOptions: {
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    description: Schema.Attribute.Blocks &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::phase-type.phase-type'
+    >;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String &
+      Schema.Attribute.Unique &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+  };
+}
+
+export interface ApiPhotoGalleryTypePhotoGalleryType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'photo_gallery_types';
+  info: {
+    description: 'Categories for photo galleries (e.g. Events, Campaigns)';
+    displayName: 'Photo Gallery Type';
+    pluralName: 'photo-gallery-types';
+    singularName: 'photo-gallery-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    field_taxonomy_pim_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::photo-gallery-type.photo-gallery-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiPhotoGalleryPhotoGallery
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'photo_gallery';
+  info: {
+    description: 'Imported from Drupal 8: photo_gallery';
+    displayName: 'Photo Gallery';
+    drupalEndpoint: 'photo_gallery';
+    pluralName: 'photo-gallerys';
+    singularName: 'photo-gallery';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    archive_article: Schema.Attribute.Boolean;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    date_photo_gallery: Schema.Attribute.String;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    domain_all_affiliates: Schema.Attribute.Boolean;
+    drupal_id: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    leader: Schema.Attribute.Relation<'oneToMany', 'api::leaders.leaders'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::photo-gallery.photo-gallery'
+    > &
+      Schema.Attribute.Private;
+    meta_tags: Schema.Attribute.String;
+    name: Schema.Attribute.String;
+    node_joomla_id: Schema.Attribute.String;
+    node_pim_id: Schema.Attribute.String;
+    photo_gallery_order: Schema.Attribute.Integer;
+    photo_gallery_url: Schema.Attribute.String;
+    photo_latest_on_banner: Schema.Attribute.JSON;
+    photo_shorten_link: Schema.Attribute.String;
+    promote: Schema.Attribute.Boolean;
+    published: Schema.Attribute.Boolean;
+    publishedAt: Schema.Attribute.DateTime;
+    sticky: Schema.Attribute.Boolean;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiPressReleasesPressReleases
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'press_releases';
+  info: {
+    description: 'Imported from Drupal 8: press_releases';
+    displayName: 'Press Releases';
+    drupalEndpoint: 'press_releases';
+    pluralName: 'press-releasess';
+    singularName: 'press-releases';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    article_archive: Schema.Attribute.JSON;
+    body: Schema.Attribute.JSON;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    date_press_releases: Schema.Attribute.String;
+    default_langcode: Schema.Attribute.Boolean;
+    domain_all_affiliates: Schema.Attribute.Boolean;
+    drupal_id: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::press-releases.press-releases'
+    > &
+      Schema.Attribute.Private;
+    media_title: Schema.Attribute.String;
+    meta_tags: Schema.Attribute.String;
+    node_joomla_id: Schema.Attribute.String;
+    node_pim_id: Schema.Attribute.String;
+    press_release_shorten_link: Schema.Attribute.String;
+    press_releases_order: Schema.Attribute.Integer;
+    pressrelease_upload_media: Schema.Attribute.String;
+    promote: Schema.Attribute.Boolean;
+    published: Schema.Attribute.Boolean;
+    publishedAt: Schema.Attribute.DateTime;
+    sticky: Schema.Attribute.Boolean;
+    title: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiRajyaSabhaStateListingRajyaSabhaStateListing
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'rajya_sabha_state_listings';
+  info: {
+    description: 'List of Indian states used for Rajya Sabha member classification';
+    displayName: 'Rajya Sabha State Listing';
+    pluralName: 'rajya-sabha-state-listings';
+    singularName: 'rajya-sabha-state-listing';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::rajya-sabha-state-listing.rajya-sabha-state-listing'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiReleaseTypeReleaseType extends Struct.CollectionTypeSchema {
+  collectionName: 'release_types';
+  info: {
+    description: 'Types of releases (e.g., Foundation Day, press release types)';
+    displayName: 'Release Type';
+    pluralName: 'release-types';
+    singularName: 'release-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    content_translation_source: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    field_taxonomy_pim_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::release-type.release-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiSocialStreamTypeSocialStreamType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'social_stream_types';
+  info: {
+    description: 'Types of social media streams like Facebook, Twitter, etc.';
+    displayName: 'Social Stream Type';
+    pluralName: 'social-stream-types';
+    singularName: 'social-stream-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    field_social_stream_icon: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::social-stream-type.social-stream-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiStateInfographicTypeStateInfographicType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'state_infographic_types';
+  info: {
+    description: 'Types of state-level infographics and their metadata';
+    displayName: 'State Infographic Type';
+    pluralName: 'state-infographic-types';
+    singularName: 'state-infographic-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    changed: Schema.Attribute.BigInteger;
+    content_translation_created: Schema.Attribute.BigInteger;
+    content_translation_outdated: Schema.Attribute.Boolean;
+    content_translation_source: Schema.Attribute.String;
+    content_translation_uid: Schema.Attribute.UID;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    drupal_revision_id: Schema.Attribute.Integer;
+    drupal_tid: Schema.Attribute.Integer & Schema.Attribute.Required;
+    field_infographics_image: Schema.Attribute.Media<'images', true>;
+    field_order: Schema.Attribute.Integer;
+    field_photography_infography_img: Schema.Attribute.Media<'images'>;
+    field_redirect_url: Schema.Attribute.String;
+    field_taxonomy_pim_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::state-infographic-type.state-infographic-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    parent_virtual: Schema.Attribute.String;
+    path_alias: Schema.Attribute.String;
+    path_pid: Schema.Attribute.Integer;
+    publishedAt: Schema.Attribute.DateTime;
+    revision_created: Schema.Attribute.BigInteger;
+    revision_translation_affected: Schema.Attribute.Boolean;
+    revision_user_id: Schema.Attribute.UID;
+    status: Schema.Attribute.Boolean;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+    vid_id: Schema.Attribute.UID;
+  };
+}
+
+export interface ApiStatePresidentsDesignationStatePresidentsDesignation
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'state_presidents_designations';
+  info: {
+    description: 'Designation types for state presidents and similar roles';
+    displayName: 'State Presidents Designation';
+    pluralName: 'state-presidents-designations';
+    singularName: 'state-presidents-designation';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  pluginOptions: {
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    default_langcode: Schema.Attribute.Boolean &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    description: Schema.Attribute.Blocks &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::state-presidents-designation.state-presidents-designation'
+    >;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String &
+      Schema.Attribute.Unique &
+      Schema.Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
   };
 }
 
@@ -1237,7 +2371,10 @@ export interface ApiStateState extends Struct.CollectionTypeSchema {
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 60;
       }>;
-    pim_id: Schema.Attribute.String;
+    pim_id: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
     publishedAt: Schema.Attribute.DateTime;
     twitter_link: Schema.Attribute.JSON;
     updatedAt: Schema.Attribute.DateTime;
@@ -1245,6 +2382,103 @@ export interface ApiStateState extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     url_alias: Schema.Attribute.String;
     youtube_link: Schema.Attribute.JSON;
+  };
+}
+
+export interface ApiTagTag extends Struct.CollectionTypeSchema {
+  collectionName: 'tags';
+  info: {
+    description: '';
+    displayName: 'Tags';
+    pluralName: 'tags';
+    singularName: 'tag';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::tag.tag'> &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiTimeDurationTimeDuration
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'time_durations';
+  info: {
+    description: 'Time duration taxonomy from Drupal';
+    displayName: 'Time Duration';
+    pluralName: 'time-durations';
+    singularName: 'time-duration';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::time-duration.time-duration'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiUnionBudgetYearUnionBudgetYear
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'union_budget_years';
+  info: {
+    description: 'Union Budget Year taxonomy from Drupal';
+    displayName: 'Union Budget Year';
+    pluralName: 'union-budget-years';
+    singularName: 'union-budget-year';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::union-budget-year.union-budget-year'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
   };
 }
 
@@ -1289,6 +2523,76 @@ export interface ApiUserAdminUserAdmin extends Struct.CollectionTypeSchema {
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     username: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiUttarPradeshDistrictUttarPradeshDistrict
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'uttar_pradesh_districts';
+  info: {
+    description: 'District taxonomy from Drupal';
+    displayName: 'Uttar Pradesh District';
+    pluralName: 'uttar-pradesh-districts';
+    singularName: 'uttar-pradesh-district';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::uttar-pradesh-district.uttar-pradesh-district'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    state: Schema.Attribute.Relation<'manyToOne', 'api::state.state'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
+  };
+}
+
+export interface ApiVideoGalleryTypeVideoGalleryType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'video_gallery_types';
+  info: {
+    description: 'Video gallery taxonomy from Drupal';
+    displayName: 'Video Gallery Type';
+    pluralName: 'video-gallery-types';
+    singularName: 'video-gallery-type';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Blocks;
+    drupal_id: Schema.Attribute.String;
+    field_taxonomy_pim_id: Schema.Attribute.String;
+    languages: Schema.Attribute.Relation<'oneToMany', 'api::language.language'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::video-gallery-type.video-gallery-type'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url_alias: Schema.Attribute.String & Schema.Attribute.Unique;
   };
 }
 
@@ -1801,10 +3105,8 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
-      'api::about.about': ApiAboutAbout;
       'api::ac-type.ac-type': ApiAcTypeAcType;
       'api::article-type.article-type': ApiArticleTypeArticleType;
-      'api::article.article': ApiArticleArticle;
       'api::bjp-governed-state.bjp-governed-state': ApiBjpGovernedStateBjpGovernedState;
       'api::bjp-live-tag.bjp-live-tag': ApiBjpLiveTagBjpLiveTag;
       'api::budget-glance-type.budget-glance-type': ApiBudgetGlanceTypeBudgetGlanceType;
@@ -1817,14 +3119,50 @@ declare module '@strapi/strapi' {
       'api::common-year-master.common-year-master': ApiCommonYearMasterCommonYearMaster;
       'api::delhi-district.delhi-district': ApiDelhiDistrictDelhiDistrict;
       'api::department-type.department-type': ApiDepartmentTypeDepartmentType;
+      'api::designation.designation': ApiDesignationDesignation;
       'api::domain.domain': ApiDomainDomain;
       'api::election-format-type.election-format-type': ApiElectionFormatTypeElectionFormatType;
       'api::election-state.election-state': ApiElectionStateElectionState;
       'api::global.global': ApiGlobalGlobal;
       'api::history-of-the-party-year.history-of-the-party-year': ApiHistoryOfThePartyYearHistoryOfThePartyYear;
+      'api::infographic-type.infographic-type': ApiInfographicTypeInfographicType;
+      'api::interest.interest': ApiInterestInterest;
+      'api::journey-year.journey-year': ApiJourneyYearJourneyYear;
       'api::language.language': ApiLanguageLanguage;
+      'api::leader-type.leader-type': ApiLeaderTypeLeaderType;
+      'api::leaders-type.leaders-type': ApiLeadersTypeLeadersType;
+      'api::leaders.leaders': ApiLeadersLeaders;
+      'api::lok-sabha-state-and-pc-listing.lok-sabha-state-and-pc-listing': ApiLokSabhaStateAndPcListingLokSabhaStateAndPcListing;
+      'api::loksabhamember.loksabhamember': ApiLoksabhamemberLoksabhamember;
+      'api::manifesto-language.manifesto-language': ApiManifestoLanguageManifestoLanguage;
+      'api::member-type.member-type': ApiMemberTypeMemberType;
+      'api::microsite-inforgarphic-type.microsite-inforgarphic-type': ApiMicrositeInforgarphicTypeMicrositeInforgarphicType;
+      'api::minister-type.minister-type': ApiMinisterTypeMinisterType;
+      'api::ministry.ministry': ApiMinistryMinistry;
+      'api::month.month': ApiMonthMonth;
+      'api::morcha-type.morcha-type': ApiMorchaTypeMorchaType;
+      'api::national-executive-category.national-executive-category': ApiNationalExecutiveCategoryNationalExecutiveCategory;
+      'api::national-executive-year.national-executive-year': ApiNationalExecutiveYearNationalExecutiveYear;
+      'api::national-general-secretary-categ.national-general-secretary-categ': ApiNationalGeneralSecretaryCategNationalGeneralSecretaryCateg;
+      'api::organisation-designation.organisation-designation': ApiOrganisationDesignationOrganisationDesignation;
+      'api::parliamentary-board-designation.parliamentary-board-designation': ApiParliamentaryBoardDesignationParliamentaryBoardDesignation;
+      'api::pc-type.pc-type': ApiPcTypePcType;
+      'api::phase-type.phase-type': ApiPhaseTypePhaseType;
+      'api::photo-gallery-type.photo-gallery-type': ApiPhotoGalleryTypePhotoGalleryType;
+      'api::photo-gallery.photo-gallery': ApiPhotoGalleryPhotoGallery;
+      'api::press-releases.press-releases': ApiPressReleasesPressReleases;
+      'api::rajya-sabha-state-listing.rajya-sabha-state-listing': ApiRajyaSabhaStateListingRajyaSabhaStateListing;
+      'api::release-type.release-type': ApiReleaseTypeReleaseType;
+      'api::social-stream-type.social-stream-type': ApiSocialStreamTypeSocialStreamType;
+      'api::state-infographic-type.state-infographic-type': ApiStateInfographicTypeStateInfographicType;
+      'api::state-presidents-designation.state-presidents-designation': ApiStatePresidentsDesignationStatePresidentsDesignation;
       'api::state.state': ApiStateState;
+      'api::tag.tag': ApiTagTag;
+      'api::time-duration.time-duration': ApiTimeDurationTimeDuration;
+      'api::union-budget-year.union-budget-year': ApiUnionBudgetYearUnionBudgetYear;
       'api::user-admin.user-admin': ApiUserAdminUserAdmin;
+      'api::uttar-pradesh-district.uttar-pradesh-district': ApiUttarPradeshDistrictUttarPradeshDistrict;
+      'api::video-gallery-type.video-gallery-type': ApiVideoGalleryTypeVideoGalleryType;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;
