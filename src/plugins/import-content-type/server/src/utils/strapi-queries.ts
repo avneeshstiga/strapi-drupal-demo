@@ -1,4 +1,7 @@
-export const findDrupalRelationshipData = async (drupalId: string, strapiRel: string) => {
+export const findDrupalRelationshipData = async (
+  drupalId: string,
+  strapiRel: string
+): Promise<number | null> => {
   try {
     strapi.log.info(
       `--- Finding Drupal relationship data for ${strapiRel} with drupal id ${drupalId} ---`
@@ -16,7 +19,7 @@ export const findDrupalRelationshipData = async (drupalId: string, strapiRel: st
 
     return data?.id;
   } catch (error) {
-    strapi.log.error(`Error finding Drupal relationship data: ${error.message}`);
-    return error;
+    strapi.log.error(`Error finding Drupal relationship data for ${strapiRel}: ${error.message}`);
+    throw new Error(`Error finding Drupal relationship data for ${strapiRel}: ${error.message}`);
   }
 };

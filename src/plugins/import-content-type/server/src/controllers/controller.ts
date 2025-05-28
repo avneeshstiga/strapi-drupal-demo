@@ -4,6 +4,7 @@ import path from 'path';
 import os from 'os';
 import axios from 'axios';
 import https from 'https';
+import { createErrorFiles } from './helpers/createErrorFiles';
 
 const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
   index(ctx) {
@@ -314,6 +315,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       if (!baseUrl || !endpoint) {
         return ctx.badRequest('baseUrl and endpoint are required in the request body');
       }
+      strapi.log.info(`starting script for content type: ${contentType}`);
       let page = 1;
       let allResults = [];
       let includedResult = [];
@@ -353,7 +355,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       // If strapi param is true, transform the data
       if (convertToStrapi && contentType) {
         const service = strapi.plugin('import-content-type').service('service');
-        const transformed = await service.transformDrupalToStrapi(
+        const { transformed, transformedResult } = await service.transformDrupalToStrapi(
           refinedBaseUrl,
           allResults,
           fieldsMapping || {},
@@ -374,12 +376,16 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           .service('service')
           .importData(contentType, transformed);
 
+        await createErrorFiles(transformedResult, `transformDrupalToStrapi-${contentType}`);
+        await createErrorFiles(result, contentType);
+
         const endTime = Date.now();
         const duration = (endTime - startTime) / 1000 / 60;
 
         return ctx.send({
           success: true,
-          result,
+          transformDrupalToStrapiResults: transformedResult,
+          importToStrapiResults: result,
           duration: `${duration} minutes`,
         });
       }

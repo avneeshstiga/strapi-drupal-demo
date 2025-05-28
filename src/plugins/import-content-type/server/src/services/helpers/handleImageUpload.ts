@@ -41,6 +41,7 @@ export const handleImageUpload = async (
     }
   } catch (error) {
     strapi.log.error(`Error processing image URL ${imageUrl}: ${error.message}`);
+    throw new Error(`Error processing image URL ${imageUrl}: ${error.message}`);
   }
 };
 
@@ -132,12 +133,14 @@ export const downloadImage = async (url: string, contentType: string) => {
   } catch (error) {
     if (error.response) {
       strapi.log.error(`Error downloading image from ${url}: HTTP status ${error.response.status}`);
+      throw new Error(`Error downloading image from ${url}: HTTP status ${error.response.status}`);
     } else if (error.request) {
       strapi.log.error(`Error downloading image from ${url}: No response received`);
+      throw new Error(`Error downloading image from ${url}: No response received`);
     } else {
       strapi.log.error(`Error downloading image from ${url}: ${error.message}`);
+      throw new Error(`Error downloading image from ${url}: ${error.message}`);
     }
-    return null;
   }
 };
 
@@ -207,7 +210,7 @@ export const uploadFileToStrapiMediaLibrary = async (fileData, name = null) => {
     if (error.stack) {
       strapi.log.error(`Stack trace: ${error.stack}`);
     }
-    return null;
+    throw new Error(`Error uploading file to Strapi media library: ${error.message}`);
   }
 };
 

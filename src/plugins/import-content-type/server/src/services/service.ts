@@ -132,6 +132,9 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
             strapi.log.error(
               `Error processing image URL object ${objWithUrl.url}: ${error.message}`
             );
+            throw new Error(
+              `Error processing image URL object ${objWithUrl.url}: ${error.message}`
+            );
           }
         } else {
           // Recursively process nested objects
@@ -295,6 +298,15 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
+  /**
+   * Transform Drupal JSON:API data to Strapi content-type format, including relations
+   * @param refinedBaseUrl - The base URL of the Drupal site
+   * @param drupalData - The Drupal JSON:API data
+   * @param fieldsMapping - The mapping of Drupal fields to Strapi fields
+   * @param relationsMapping - The mapping of Drupal relationships to Strapi relationships
+   * @param includedResult - The included results from the Drupal JSON:API response
+   * @returns The transformed Strapi content-type data
+   */
   async transformDrupalToStrapi(
     refinedBaseUrl,
     drupalData,
@@ -302,10 +314,18 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
     relationsMapping = {},
     includedResult = []
   ) {
+    const results = {
+      totalRecords: drupalData.length,
+      successful: 0,
+      failed: 0,
+      errors: [] as { index: number; error: any }[],
+      failedRecords: [] as any[],
+    };
+
     // Map Drupal JSON:API data to Strapi content-type format, including relations
     // First, map all items and resolve all promises
-    return Promise.all(
-      drupalData.map(async (item) => {
+    const transformed = await Promise.all(
+      drupalData.map(async (item, index) => {
         const strapiItem: Record<string, any> = {};
 
         // Map fields
@@ -325,16 +345,25 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
             continue;
           }
 
-          const data = await handleRelation(
-            refinedBaseUrl,
-            relationshipData,
-            strapiRelKey,
-            includedResult
-          );
-          strapi.log.info(
-            `relationship data found for strapi key: ${strapiRelKey}, drupal key: ${drupalRelKey}: ${JSON.stringify(data, null, 2)}`
-          );
-          strapiItem[strapiRelKey] = data;
+          try {
+            const data = await handleRelation(
+              refinedBaseUrl,
+              relationshipData,
+              strapiRelKey,
+              includedResult
+            );
+            strapiItem[strapiRelKey] = data;
+
+            results.successful++;
+          } catch (error) {
+            strapi.log.error(`Error processing relationship ${strapiRelKey}: ${error.message}`);
+            results.failed++;
+            results.errors.push({
+              index: index,
+              error: { message: error.message },
+            });
+            results.failedRecords.push(item);
+          }
         }
 
         // Optionally, include the original Drupal id for reference
@@ -344,6 +373,11 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
         return strapiItem;
       })
     );
+
+    return {
+      transformedResult: results,
+      transformed,
+    };
   },
 });
 
