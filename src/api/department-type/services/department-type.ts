@@ -1,7 +1,0 @@
-/**
- * department-type service
- */
-
-import { factories } from '@strapi/strapi';
-
-export default factories.createCoreService('api::department-type.department-type');
