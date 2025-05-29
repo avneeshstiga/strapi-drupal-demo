@@ -1,0 +1,22 @@
+{
+  "collectionName": "components_bodies",
+  "info": {
+    "displayName": "Body",
+    "description": "",
+    "icon": "walk"
+  },
+  "attributes": {
+    "value": {
+      "type": "richtext"
+    },
+    "format": {
+      "type": "string"
+    },
+    "processed": {
+      "type": "richtext"
+    },
+    "summary": {
+      "type": "text"
+    }
+  }
+}

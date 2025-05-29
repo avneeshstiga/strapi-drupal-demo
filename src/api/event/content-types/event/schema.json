@@ -1,0 +1,105 @@
+{
+  "kind": "collectionType",
+  "collectionName": "events",
+  "info": {
+    "singularName": "event",
+    "pluralName": "events",
+    "displayName": "Event",
+    "description": "Imported from Drupal node--events"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "drupal_internal__nid": {
+      "type": "integer"
+    },
+     "events_order": {
+      "type": "integer"
+    },
+    "drupal_internal__vid": {
+      "type": "integer"
+    },
+    "drupal_langcode": {
+      "type": "string"
+    },
+    "revision_timestamp": {
+      "type": "biginteger"
+    },
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "created": {
+      "type": "biginteger"
+    },
+    "changed": {
+      "type": "biginteger"
+    },
+    "promote": {
+      "type": "boolean"
+    },
+    "sticky": {
+      "type": "boolean"
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+    "revision_translation_affected": {
+      "type": "boolean"
+    },
+    "content_translation_source": {
+      "type": "string"
+    },
+    "content_translation_outdated": {
+      "type": "boolean"
+    },
+    "body": {
+      "type": "component",
+      "component": "shared.body",
+      "repeatable": false
+    },
+    "article_archive": {
+      "type": "json"
+    },
+    "domain_all_affiliates": {
+      "type": "boolean"
+    },
+    "events_date": {
+      "type": "date"
+    },
+    "events_date_range": {
+      "type": "component",
+      "component": "shared.date-range",
+      "repeatable": false
+    },
+    "event_date_with_time": {
+      "type": "component",
+      "component": "shared.datetime-range",
+      "repeatable": false
+    },
+    "meta_tags": {
+      "type": "json"
+    },
+    "meta_tag_event": {
+      "type": "json"
+    },
+    "node_pim_id": {
+      "type": "string"
+    },
+    "events_image": {
+      "type": "media",
+      "multiple": false,
+      "required": false
+    },
+    "drupal_id": {
+      "type": "string",
+       "unique": true
+    }
+  }
+}

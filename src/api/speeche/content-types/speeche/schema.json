@@ -1,0 +1,99 @@
+{
+  "kind": "collectionType",
+  "collectionName": "speeches",
+  "info": {
+    "singularName": "speeche",
+    "pluralName": "speeches",
+    "displayName": "Speech",
+    "description": "Imported from Drupal node--speeches"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "drupal_internal__nid": {
+      "type": "integer"
+    },
+    "drupal_internal__vid": {
+      "type": "integer"
+    },
+    "drupal_langcode": {
+      "type": "string"
+    },
+    "revision_timestamp": {
+      "type": "biginteger"
+    },
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "created": {
+      "type": "biginteger"
+    },
+    "changed": {
+      "type": "biginteger"
+    },
+    "promote": {
+      "type": "boolean"
+    },
+    "sticky": {
+      "type": "boolean"
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+    "revision_translation_affected": {
+      "type": "boolean"
+    },
+    "content_translation_source": {
+      "type": "string"
+    },
+    "content_translation_outdated": {
+      "type": "boolean"
+    },
+    "body": {
+      "type": "component",
+      "component": "shared.body",
+      "repeatable": false
+    },
+    "article_archive": {
+      "type": "json"
+    },
+    "date_speeches": {
+      "type": "date"
+    },
+    "display_in_must_watch_vide": {
+      "type": "boolean"
+    },
+    "domain_all_affiliates": {
+      "type": "boolean"
+    },
+    "meta_tags": {
+      "type": "json"
+    },
+    "node_joomla_id": {
+      "type": "string"
+    },
+    "node_pim_id": {
+      "type": "string"
+    },
+    "speeches_order": {
+      "type": "integer"
+    },
+    "speeches_shorten_link": {
+      "type": "string"
+    },
+    "speeches_video_link": {
+      "type": "string"
+    },
+    "drupal_id": {
+      "type": "string",
+       "unique": true
+    }
+  }
+}

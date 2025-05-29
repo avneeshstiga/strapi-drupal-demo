@@ -1,0 +1,14 @@
+{
+  "collectionName": "components_datetime_ranges",
+  "info": {
+    "displayName": "Datetime Range"
+  },
+  "attributes": {
+    "value": {
+      "type": "datetime"
+    },
+    "end_value": {
+      "type": "datetime"
+    }
+  }
+}

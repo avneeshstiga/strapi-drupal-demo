@@ -1,0 +1,87 @@
+{
+  "kind": "collectionType",
+  "collectionName": "candidate_profiles",
+  "info": {
+    "singularName": "candidate-profile",
+    "pluralName": "candidate-profiles",
+    "displayName": "Candidate Profile",
+    "description": "Imported from Drupal node--candidate_profile"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
+  "attributes": {
+    "drupal_id": {
+      "type": "string",
+      "unique": true
+    },
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "drupal_langcode": {
+      "type": "string"
+    },
+    "created": {
+      "type": "datetime"
+    },
+    "changed": {
+      "type": "datetime"
+    },
+    "candidate_date_of_election": {
+      "type": "date"
+    },
+    "candidate_profile": { // need body field
+      "type": "richtext"
+    },
+    "body": {
+      "type": "component",
+      "component": "shared.body",
+      "repeatable": false
+    },
+    "candidate_image": {
+      "type": "media",
+      "multiple": false,
+      "required": false
+    },
+    "candidate_phase": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::phase-type.phase-type"
+    },
+    "candidate_leader_name": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::leader.leader"
+    },
+    "candidate_ac": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::ac-type.ac-type"
+    },
+    "assign_state_election": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::state-election.state-election"
+    },
+    "domain_access": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::domain.domain"
+    },
+    "article_archive": {
+      "type": "json"
+    },
+    "meta_tags": {
+      "type": "json"
+    },
+    "weight": {
+      "type": "integer"
+    }
+  }
+}
