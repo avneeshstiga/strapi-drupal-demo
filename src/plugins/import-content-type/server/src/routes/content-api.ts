@@ -37,7 +37,7 @@ export default [
   },
   {
     method: 'POST',
-    path: '/import-local-file/:contentType',
+    path: '/import-local-file',
     handler: 'controller.importFromLocalFile',
     config: {
       policies: [],

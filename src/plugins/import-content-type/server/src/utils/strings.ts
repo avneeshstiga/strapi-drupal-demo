@@ -8,3 +8,7 @@ export const convertAllToChar = (input, char = '-') => {
 export const convertSpaceToChar = (input, char = '-') => {
   return input.replace(/\s+/g, char);
 };
+
+export const convertHyphenToChar = (input, char = '_') => {
+  return input.replace(/-/g, char);
+};
