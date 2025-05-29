@@ -1,10 +1,10 @@
 {
   "kind": "collectionType",
-  "collectionName": "election_format_types",
+  "collectionName": "years",
   "info": {
-    "singularName": "election-format-type",
-    "pluralName": "election-format-types",
-    "displayName": "Election Format Type"
+    "singularName": "year",
+    "pluralName": "years",
+    "displayName": "Common Year Master"
   },
   "options": {
     "draftAndPublish": true
@@ -46,6 +46,9 @@
     },
     "drupal_internal__tid": {
       "type": "integer"
+    },
+    "taxonomy_pim_id": {
+      "type": "string"
     },
     "drupal_langcode": {
       "type": "string"

@@ -7,6 +7,7 @@ import {
   uploadFileToStrapiMediaLibrary,
 } from './helpers/handleImageUpload';
 import { handleRelation } from './helpers/handleRelation';
+import { findStrapiDocument } from '../utils/strapi-queries';
 
 const service = ({ strapi }: { strapi: Core.Strapi }) => ({
   getWelcomeMessage() {
@@ -68,12 +69,12 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       if (typeof value === 'string' && this.isImageUrl(value)) {
         strapi.log.info(`Processing image URL: ${value}`);
         const processedImage = await handleImageUpload(value, contentType);
-        result[key] = processedImage;
+        result[key] = [processedImage];
       } else if (Array.isArray(value)) {
         const processedArray: any[] = [];
 
         for (const item of value) {
-          if (typeof item === 'string') {
+          if (typeof item === 'string' && this.isImageUrl(item)) {
             strapi.log.info(`Processing image URL from array: ${item}`);
             const processedImage = await handleImageUpload(item, contentType);
             processedArray.push(processedImage);
@@ -81,6 +82,8 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
             strapi.log.info(`Processing image object from array: ${item.url}`);
             const processedImage = await handleImageUpload(item.url, contentType);
             processedArray.push(processedImage);
+          } else if (!this.isImageUrl(item)) {
+            processedArray.push(item);
           }
         }
 
@@ -132,6 +135,9 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
             strapi.log.error(
               `Error processing image URL object ${objWithUrl.url}: ${error.message}`
             );
+            throw new Error(
+              `Error processing image URL object ${objWithUrl.url}: ${error.message}`
+            );
           }
         } else {
           // Recursively process nested objects
@@ -149,7 +155,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
    * @param data - Array of records to import
    * @returns Object with counts of imported records and any errors
    */
-  async importData(contentType: string, data: any[]) {
+  async importData(contentType: string, data: any[], update = false) {
     if (!contentType || !data || !Array.isArray(data)) {
       throw new Error('Invalid parameters: contentType and data array are required');
     }
@@ -164,8 +170,6 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       totalRecords: data.length,
       successful: 0,
       failed: 0,
-      processedImages: 0,
-      skippedImages: 0,
       errors: [] as { index: number; error: any }[],
       failedRecords: [] as any[],
     };
@@ -188,13 +192,19 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
           const processedRecord = await this.processObjectForImages(record, contentType);
           sanitizedRecord = this.sanitizeRecordBeforeCreate(processedRecord);
 
-          const { status, ...rest } = sanitizedRecord;
-
-          await validateRecordAgainstSchema(schema, rest);
-          await strapi.entityService.create(`api::${contentType}.${contentType}`, {
-            data: rest,
-            status: status ?? 'draft',
-          });
+          const { status, drupal_id, ...rest } = sanitizedRecord;
+          await validateRecordAgainstSchema(schema, rest, update);
+          if (update) {
+            const { id: strapiId, publishedAt } = await findStrapiDocument(drupal_id, contentType);
+            await strapi.entityService.update(`api::${contentType}.${contentType}`, strapiId, {
+              data: { ...rest, publishedAt },
+            });
+          } else {
+            await strapi.entityService.create(`api::${contentType}.${contentType}`, {
+              data: { ...rest, drupal_id },
+              publishedAt: status ?? 'draft',
+            });
+          }
 
           results.successful++;
         } catch (error) {
@@ -297,51 +307,88 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
+  /**
+   * Transform Drupal JSON:API data to Strapi content-type format, including relations
+   * @param refinedBaseUrl - The base URL of the Drupal site
+   * @param drupalData - The Drupal JSON:API data
+   * @param fieldsMapping - The mapping of Drupal fields to Strapi fields
+   * @param relationsMapping - The mapping of Drupal relationships to Strapi relationships
+   * @param includedResult - The included results from the Drupal JSON:API response
+   * @returns The transformed Strapi content-type data
+   */
   async transformDrupalToStrapi(
     refinedBaseUrl,
     drupalData,
     fieldsMapping = {},
     relationsMapping = {},
-    includedResult = []
+    includedResult = [],
+    contentType
   ) {
+    const results = {
+      totalRecords: drupalData.length,
+      successful: 0,
+      failed: 0,
+      errors: [] as { index: number; error: any }[],
+      failedRecords: [] as any[],
+    };
+
     // Map Drupal JSON:API data to Strapi content-type format, including relations
     // First, map all items and resolve all promises
-    return drupalData.map((item) => {
-      const strapiItem: Record<string, any> = {};
+    const transformed = await Promise.all(
+      drupalData.map(async (item, index) => {
+        const strapiItem: Record<string, any> = {};
 
-      // Map fields
-      for (const [strapiField, drupalField] of Object.entries(fieldsMapping)) {
-        strapiItem[strapiField] = item.attributes?.[drupalField as string];
-      }
-
-      // Map relationships
-      for (const [strapiRelKey, drupalRelKey] of Object.entries(relationsMapping)) {
-        const relationshipData = item.relationships?.[drupalRelKey as string]?.data;
-
-        if (!relationshipData) {
-          strapiItem[strapiRelKey] = null;
-          strapi.log.info(
-            `No relationship data found for strapi key: ${strapiRelKey}, drupal key: ${drupalRelKey}`
-          );
-          continue;
+        // Map fields
+        for (const [strapiField, drupalField] of Object.entries(fieldsMapping)) {
+          strapiItem[strapiField] = item.attributes?.[drupalField as string];
         }
 
-        handleRelation(refinedBaseUrl, relationshipData, strapiRelKey, includedResult).then(
-          (data) => {
+        // Map relationships
+        for (const [strapiRelKey, drupalRelKey] of Object.entries(relationsMapping)) {
+          const relationshipData = item.relationships?.[drupalRelKey as string]?.data;
+
+          if (!relationshipData) {
+            strapiItem[strapiRelKey] = null;
             strapi.log.info(
-              `relationship data found for strapi key: ${strapiRelKey}, drupal key: ${drupalRelKey}: ${JSON.stringify(data, null, 2)}`
+              `No relationship data found for strapi key: ${strapiRelKey}, drupal key: ${drupalRelKey}`
+            );
+            continue;
+          }
+
+          try {
+            const data = await handleRelation(
+              refinedBaseUrl,
+              relationshipData,
+              strapiRelKey,
+              includedResult,
+              contentType
             );
             strapiItem[strapiRelKey] = data;
+
+            results.successful++;
+          } catch (error) {
+            strapi.log.error(`Error processing relationship ${strapiRelKey}: ${error.message}`);
+            results.failed++;
+            results.errors.push({
+              index: index,
+              error: { message: error.message },
+            });
+            results.failedRecords.push(item);
           }
-        );
-      }
+        }
 
-      // Optionally, include the original Drupal id for reference
-      strapiItem['drupal_id'] = item.id;
-      strapi.log.info(`strapiItem: ${JSON.stringify(strapiItem, null, 2)}`);
+        // Optionally, include the original Drupal id for reference
+        strapiItem['drupal_id'] = item.id;
+        strapi.log.info(`strapiItem: ${JSON.stringify(strapiItem, null, 2)}`);
 
-      return strapiItem;
-    });
+        return strapiItem;
+      })
+    );
+
+    return {
+      transformedResult: results,
+      transformed,
+    };
   },
 });
 

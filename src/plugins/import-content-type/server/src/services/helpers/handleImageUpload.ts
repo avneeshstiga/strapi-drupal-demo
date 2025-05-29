@@ -5,6 +5,7 @@ import axios from 'axios';
 import https from 'https';
 import fs from 'fs-extra';
 import os from 'os';
+import { convertSpaceToChar } from '../../utils/strings';
 
 /**
  * Handle image upload to Strapi media library
@@ -16,7 +17,7 @@ import os from 'os';
 export const handleImageUpload = async (
   imageUrl: string,
   contentType: string
-): Promise<number[] | string[]> => {
+): Promise<number | string> => {
   try {
     // Download and upload the image to Strapi
     const fileData = await downloadImage(imageUrl, contentType);
@@ -26,20 +27,21 @@ export const handleImageUpload = async (
       const uploadedFile = await uploadFileToStrapiMediaLibrary(fileData);
       if (uploadedFile && uploadedFile.id) {
         strapi.log.info(`Processed image URL ${imageUrl} into media ID ${uploadedFile.id}`);
-        return [uploadedFile.id];
+        return uploadedFile.id;
       } else {
         strapi.log.warn(`Failed to upload image from URL ${imageUrl}, keeping original value`);
-        return [imageUrl];
+        return imageUrl;
       }
     } else if (fileData && fileData.alreadyExists) {
       strapi.log.info(`Image ${fileData.name} already exists in strapi media library`);
-      return [fileData.id];
+      return fileData.id;
     } else {
       strapi.log.warn(`Failed to download image from URL ${imageUrl}, keeping original value`);
-      return [imageUrl];
+      return imageUrl;
     }
   } catch (error) {
     strapi.log.error(`Error processing image URL ${imageUrl}: ${error.message}`);
+    throw new Error(`Error processing image URL ${imageUrl}: ${error.message}`);
   }
 };
 
@@ -131,12 +133,14 @@ export const downloadImage = async (url: string, contentType: string) => {
   } catch (error) {
     if (error.response) {
       strapi.log.error(`Error downloading image from ${url}: HTTP status ${error.response.status}`);
+      throw new Error(`Error downloading image from ${url}: HTTP status ${error.response.status}`);
     } else if (error.request) {
       strapi.log.error(`Error downloading image from ${url}: No response received`);
+      throw new Error(`Error downloading image from ${url}: No response received`);
     } else {
       strapi.log.error(`Error downloading image from ${url}: ${error.message}`);
+      throw new Error(`Error downloading image from ${url}: ${error.message}`);
     }
-    return null;
   }
 };
 
@@ -206,7 +210,7 @@ export const uploadFileToStrapiMediaLibrary = async (fileData, name = null) => {
     if (error.stack) {
       strapi.log.error(`Stack trace: ${error.stack}`);
     }
-    return null;
+    throw new Error(`Error uploading file to Strapi media library: ${error.message}`);
   }
 };
 

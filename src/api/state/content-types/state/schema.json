@@ -54,6 +54,12 @@
       "relation": "oneToMany",
       "target": "api::ac-type.ac-type",
       "mappedBy": "state"
+    },
+    "pc_types": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::pc-type.pc-type",
+      "mappedBy": "state"
     }
   }
 }

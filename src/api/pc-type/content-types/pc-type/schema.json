@@ -10,37 +10,58 @@
   "options": {
     "draftAndPublish": true
   },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
   "attributes": {
-    "languages": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::language.language"
-    },
     "name": {
       "type": "string",
-      "required": true
+      "required": true,
+      "maxLength": 60,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
     },
     "description": {
-      "type": "blocks"
+      "type": "blocks",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
     },
     "default_langcode": {
       "type": "boolean"
     },
-    "field_taxonomy_pim_id": {
+    "taxonomy_pim_id": {
       "type": "string"
     },
-    "field_pc_type_states": {
+    "state": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "api::state.state"
+      "target": "api::state.state",
+      "inversedBy": "pc_types"
     },
-     "url_alias": {
+    "url_alias": {
       "type": "string",
       "unique": true
     },
     "drupal_id": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_internal__tid": {
+      "type": "integer"
+    },
+    "drupal_langcode": {
       "type": "string"
+    },
+    "weight": {
+      "type": "integer"
     }
-    
   }
 }
