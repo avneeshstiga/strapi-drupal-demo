@@ -63,9 +63,36 @@ export default [
     },
   },
   {
+    method: 'POST',
+    path: '/import-bjp-domains',
+    handler: 'controller.importBjpDomains', //http://localhost:1337/api/import-content-type/import-bjp-domains
+    config: {
+      policies: [],
+      auth: false, // Make this endpoint public
+    },
+  },
+  {
+    method: 'POST',
+    path: '/import-bjp-complete',
+    handler: 'controller.importBjpComplete', //http://localhost:1337/api/import-content-type/import-bjp-complete
+    config: {
+      policies: [],
+      auth: false, // Make this endpoint public
+    },
+  },
+  {
     method: 'DELETE',
     path: '/delete/:contentType',
     handler: 'controller.deleteContentType',
+    config: {
+      policies: [],
+      auth: false, // Make this endpoint public
+    },
+  },
+  {
+    method: 'DELETE',
+    path: '/delete-all-users',
+    handler: 'controller.deleteAllUsers', //http://localhost:1337/api/import-content-type/delete-all-users
     config: {
       policies: [],
       auth: false, // Make this endpoint public
