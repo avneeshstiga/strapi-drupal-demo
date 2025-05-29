@@ -16,6 +16,10 @@
     }
   },
   "attributes": {
+    "booksmonograph_langode": {
+      "type": "string",
+      "maxLength": 255
+    },
     "name": {
       "type": "string",
       "maxLength": 60,
@@ -47,12 +51,11 @@
     "weight": {
       "type": "integer"
     },
-    "url_alias": {
-      "type": "string",
-      "unique": true
-    },
     "drupal_internal__tid": {
       "type": "integer"
+    },
+    "path": {
+      "type": "json"
     }
   }
 }

@@ -10,22 +10,48 @@
   "options": {
     "draftAndPublish": true
   },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
   "attributes": {
-    "name": {
-      "type": "string",
-      "required": true
-    },
-    "drupal_id": {
-      "type": "string"
-    },
-    "drupal_published": {
-      "type": "boolean"
-    },
     "url_alias": {
       "type": "string"
     },
+    "name": {
+      "type": "string",
+      "maxLength": 160,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      },
+      "required": true
+    },
     "description": {
-      "type": "blocks"
+      "type": "blocks",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "drupal_id": {
+      "type": "string",
+      "unique": true
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+    "drupal_langcode": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "integer"
+    },
+    "drupal_internal__tid": {
+      "type": "integer"
     }
   }
 }
