@@ -1,6 +1,5 @@
 import path from 'path';
 import fs from 'fs-extra';
-import os from 'os';
 
 export const createErrorFiles = async (result, name, includedResult = []) => {
   let filePath = null;
@@ -12,7 +11,7 @@ export const createErrorFiles = async (result, name, includedResult = []) => {
       const timeStr = now.toISOString().replace(/:/g, '-').replace(/\..+/, ''); // YYYY-MM-DDThh-mm-ss format
 
       // Create base logs directory
-      const baseLogDir = path.join(__dirname, 'strapi-logs');
+      const baseLogDir = path.join(__dirname, 'project-logs');
       // Create date-specific directory
       const dateDir = path.join(baseLogDir, dateStr);
 
