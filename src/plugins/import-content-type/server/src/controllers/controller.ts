@@ -240,25 +240,25 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
    */
   async importFromLocalFile(ctx) {
     try {
-      const { contentType } = ctx.params;
-      const { filePath } = ctx.request.body;
+      const startTime = Date.now();
+      const {
+        contentType,
+        filePath,
+        update,
+        baseUrl,
+        fieldsMapping,
+        relationsMapping,
+        convertToStrapi,
+      } = ctx.request.body;
 
-      if (!contentType) {
-        return ctx.badRequest('Content type parameter is required');
-      }
-
-      if (!filePath) {
-        return ctx.badRequest('File path is required in the request body');
-      }
-
-      // Check if file exists
-      if (!fs.existsSync(filePath)) {
-        return ctx.badRequest(`File not found at path: ${filePath}`);
+      if (!contentType || !baseUrl || !filePath) {
+        return ctx.badRequest('Content type, baseUrl, fieldsMapping and filePath are required');
       }
 
       strapi.log.info(`Importing data from local file: ${filePath}`);
 
       try {
+        const refinedBaseUrl = baseUrl.replace(/\/$/, '');
         // Read file content
         const fileContent = fs.readFileSync(filePath, 'utf8');
         strapi.log.info(`Successfully read file content, size: ${fileContent.length} chars`);
@@ -269,27 +269,58 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           jsonData = JSON.parse(fileContent);
 
           // Validate it's an array
-          if (!Array.isArray(jsonData)) {
+          if (!Array.isArray(jsonData.data)) {
             return ctx.badRequest('File must contain a JSON array of records');
           }
 
-          strapi.log.info(`Valid JSON found with ${jsonData.length} records`);
+          strapi.log.info(`Valid JSON found with ${jsonData.data.length} records`);
         } catch (jsonError) {
           return ctx.badRequest(`Invalid JSON in file: ${jsonError.message}`);
         }
 
-        // Process the import
-        const result = await strapi
-          .plugin('import-content-type')
-          .service('service')
-          .importData(contentType, jsonData);
+        // If strapi param is true, transform the data
+        if (convertToStrapi && contentType) {
+          const service = strapi.plugin('import-content-type').service('service');
+          const { transformed, transformedResult } = await service.transformDrupalToStrapi(
+            refinedBaseUrl,
+            jsonData.data,
+            fieldsMapping || {},
+            relationsMapping || {},
+            jsonData.included,
+            contentType
+          );
 
-        return ctx.send({
-          success: true,
-          file: path.basename(filePath),
-          recordsCount: jsonData.length,
-          result,
-        });
+          if (!transformed || !Array.isArray(transformed)) {
+            return ctx.badRequest('Request body must contain a "data" array');
+          }
+
+          // Log import request for debugging
+          strapi.log.info(`Importing ${transformed.length} records into ${contentType}`);
+
+          // Call service to handle the import
+          const result = await strapi
+            .plugin('import-content-type')
+            .service('service')
+            .importData(contentType, transformed, update);
+
+          await createErrorFiles(
+            transformedResult,
+            `importFromLocalFile-transformDrupalToStrapi-${contentType}`,
+            jsonData.included
+          );
+          await createErrorFiles(result, `importFromLocalFile-${contentType}`);
+
+          const endTime = Date.now();
+          const duration = (endTime - startTime) / 1000 / 60;
+
+          return ctx.send({
+            success: true,
+            file: path.basename(filePath),
+            transformDrupalToStrapiResults: transformedResult,
+            importToStrapiResults: result,
+            duration: `${duration} minutes`,
+          });
+        }
       } catch (fileError) {
         strapi.log.error(`File processing error: ${fileError.message}`);
         return ctx.badRequest(`Error processing file: ${fileError.message}`);
@@ -360,7 +391,8 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           allResults,
           fieldsMapping || {},
           relationsMapping || {},
-          includedResult
+          includedResult,
+          contentType
         );
 
         if (!transformed || !Array.isArray(transformed)) {
@@ -376,7 +408,11 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           .service('service')
           .importData(contentType, transformed);
 
-        await createErrorFiles(transformedResult, `transformDrupalToStrapi-${contentType}`);
+        await createErrorFiles(
+          transformedResult,
+          `transformDrupalToStrapi-${contentType}`,
+          includedResult
+        );
         await createErrorFiles(result, contentType);
 
         const endTime = Date.now();

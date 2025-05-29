@@ -7,6 +7,7 @@ import {
   uploadFileToStrapiMediaLibrary,
 } from './helpers/handleImageUpload';
 import { handleRelation } from './helpers/handleRelation';
+import { findStrapiDocument } from '../utils/strapi-queries';
 
 const service = ({ strapi }: { strapi: Core.Strapi }) => ({
   getWelcomeMessage() {
@@ -68,12 +69,12 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
       if (typeof value === 'string' && this.isImageUrl(value)) {
         strapi.log.info(`Processing image URL: ${value}`);
         const processedImage = await handleImageUpload(value, contentType);
-        result[key] = processedImage;
+        result[key] = [processedImage];
       } else if (Array.isArray(value)) {
         const processedArray: any[] = [];
 
         for (const item of value) {
-          if (typeof item === 'string') {
+          if (typeof item === 'string' && this.isImageUrl(item)) {
             strapi.log.info(`Processing image URL from array: ${item}`);
             const processedImage = await handleImageUpload(item, contentType);
             processedArray.push(processedImage);
@@ -81,6 +82,8 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
             strapi.log.info(`Processing image object from array: ${item.url}`);
             const processedImage = await handleImageUpload(item.url, contentType);
             processedArray.push(processedImage);
+          } else if (!this.isImageUrl(item)) {
+            processedArray.push(item);
           }
         }
 
@@ -152,7 +155,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
    * @param data - Array of records to import
    * @returns Object with counts of imported records and any errors
    */
-  async importData(contentType: string, data: any[]) {
+  async importData(contentType: string, data: any[], update = false) {
     if (!contentType || !data || !Array.isArray(data)) {
       throw new Error('Invalid parameters: contentType and data array are required');
     }
@@ -189,13 +192,19 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
           const processedRecord = await this.processObjectForImages(record, contentType);
           sanitizedRecord = this.sanitizeRecordBeforeCreate(processedRecord);
 
-          const { status, ...rest } = sanitizedRecord;
-
-          await validateRecordAgainstSchema(schema, rest);
-          await strapi.entityService.create(`api::${contentType}.${contentType}`, {
-            data: rest,
-            status: status ?? 'draft',
-          });
+          const { status, drupal_id, ...rest } = sanitizedRecord;
+          await validateRecordAgainstSchema(schema, rest, update);
+          if (update) {
+            const { id: strapiId, publishedAt } = await findStrapiDocument(drupal_id, contentType);
+            await strapi.entityService.update(`api::${contentType}.${contentType}`, strapiId, {
+              data: { ...rest, publishedAt },
+            });
+          } else {
+            await strapi.entityService.create(`api::${contentType}.${contentType}`, {
+              data: { ...rest, drupal_id },
+              publishedAt: status ?? 'draft',
+            });
+          }
 
           results.successful++;
         } catch (error) {
@@ -312,7 +321,8 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
     drupalData,
     fieldsMapping = {},
     relationsMapping = {},
-    includedResult = []
+    includedResult = [],
+    contentType
   ) {
     const results = {
       totalRecords: drupalData.length,
@@ -350,7 +360,8 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
               refinedBaseUrl,
               relationshipData,
               strapiRelKey,
-              includedResult
+              includedResult,
+              contentType
             );
             strapiItem[strapiRelKey] = data;
 

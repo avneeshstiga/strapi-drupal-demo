@@ -17,7 +17,7 @@ import { convertSpaceToChar } from '../../utils/strings';
 export const handleImageUpload = async (
   imageUrl: string,
   contentType: string
-): Promise<number[] | string[]> => {
+): Promise<number | string> => {
   try {
     // Download and upload the image to Strapi
     const fileData = await downloadImage(imageUrl, contentType);
@@ -27,17 +27,17 @@ export const handleImageUpload = async (
       const uploadedFile = await uploadFileToStrapiMediaLibrary(fileData);
       if (uploadedFile && uploadedFile.id) {
         strapi.log.info(`Processed image URL ${imageUrl} into media ID ${uploadedFile.id}`);
-        return [uploadedFile.id];
+        return uploadedFile.id;
       } else {
         strapi.log.warn(`Failed to upload image from URL ${imageUrl}, keeping original value`);
-        return [imageUrl];
+        return imageUrl;
       }
     } else if (fileData && fileData.alreadyExists) {
       strapi.log.info(`Image ${fileData.name} already exists in strapi media library`);
-      return [fileData.id];
+      return fileData.id;
     } else {
       strapi.log.warn(`Failed to download image from URL ${imageUrl}, keeping original value`);
-      return [imageUrl];
+      return imageUrl;
     }
   } catch (error) {
     strapi.log.error(`Error processing image URL ${imageUrl}: ${error.message}`);

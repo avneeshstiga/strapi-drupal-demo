@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import os from 'os';
 
-export const createErrorFiles = async (result, name) => {
+export const createErrorFiles = async (result, name, includedResult = []) => {
   let filePath = null;
   if (result?.errors?.length > 0 || result?.failedRecords?.length > 0) {
     try {
@@ -25,7 +25,7 @@ export const createErrorFiles = async (result, name) => {
         const logFileName = `${name}-errors-${timeStr}.json`;
         filePath = path.join(dateDir, logFileName);
 
-        fs.writeFileSync(filePath, JSON.stringify(result.errors, null, 2));
+        fs.writeFileSync(filePath, JSON.stringify({ data: result.errors }, null, 2));
         strapi.log.info(`Created errors log file at ${filePath}`);
       }
 
@@ -33,7 +33,10 @@ export const createErrorFiles = async (result, name) => {
         const logFileName = `${name}-failed-records-${timeStr}.json`;
         filePath = path.join(dateDir, logFileName);
 
-        fs.writeFileSync(filePath, JSON.stringify(result.failedRecords, null, 2));
+        fs.writeFileSync(
+          filePath,
+          JSON.stringify({ data: result.failedRecords, included: includedResult }, null, 2)
+        );
         strapi.log.info(`Created failed records log file at ${filePath}`);
       }
     } catch (error) {
