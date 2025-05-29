@@ -82,7 +82,7 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
             strapi.log.info(`Processing image object from array: ${item.url}`);
             const processedImage = await handleImageUpload(item.url, contentType);
             processedArray.push(processedImage);
-          } else if (!this.isImageUrl(item)) {
+          } else if (Boolean(item) && !this.isImageUrl(item)) {
             processedArray.push(item);
           }
         }
@@ -192,16 +192,20 @@ const service = ({ strapi }: { strapi: Core.Strapi }) => ({
           const processedRecord = await this.processObjectForImages(record, contentType);
           sanitizedRecord = this.sanitizeRecordBeforeCreate(processedRecord);
 
-          const { status, drupal_id, ...rest } = sanitizedRecord;
-          await validateRecordAgainstSchema(schema, rest, update);
           if (update) {
+            const { status, drupal_id, ...rest } = sanitizedRecord;
+            await validateRecordAgainstSchema(schema, rest, update);
+
             const { id: strapiId, publishedAt } = await findStrapiDocument(drupal_id, contentType);
             await strapi.entityService.update(`api::${contentType}.${contentType}`, strapiId, {
               data: { ...rest, publishedAt },
             });
           } else {
+            const { status, ...rest } = sanitizedRecord;
+            await validateRecordAgainstSchema(schema, rest, update);
+
             await strapi.entityService.create(`api::${contentType}.${contentType}`, {
-              data: { ...rest, drupal_id },
+              data: { ...rest },
               publishedAt: status ?? 'draft',
             });
           }

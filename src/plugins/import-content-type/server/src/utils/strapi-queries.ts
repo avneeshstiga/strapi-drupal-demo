@@ -7,6 +7,11 @@ export const findDrupalRelationshipData = async (
     strapi.log.info(
       `--- Finding Drupal relationship data for ${strapiRel}, contentType: ${contentType} with drupal id ${drupalId} ---`
     );
+    // Virtual taxonomy terms are referred to root for parent in drupal
+    if (drupalId === 'virtual') {
+      return null;
+    }
+
     const type = contentType ? contentType : strapiRel;
     const data = await strapi.documents(`api::${type}.${type}`).findFirst({
       filters: {
@@ -15,6 +20,11 @@ export const findDrupalRelationshipData = async (
         },
       },
     });
+
+    if (!data || !data?.id) {
+      strapi.log.error(`No data found for ${strapiRel} with drupal id ${drupalId}`);
+      throw new Error(`No data found for ${strapiRel} with drupal id ${drupalId}`);
+    }
     strapi.log.info(
       `--- Found Drupal relationship data for ${strapiRel} with strapi id ${data?.id} ---`
     );
