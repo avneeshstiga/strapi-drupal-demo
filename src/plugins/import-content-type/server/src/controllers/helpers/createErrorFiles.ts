@@ -12,7 +12,7 @@ export const createErrorFiles = async (result, name, includedResult = []) => {
       const timeStr = now.toISOString().replace(/:/g, '-').replace(/\..+/, ''); // YYYY-MM-DDThh-mm-ss format
 
       // Create base logs directory
-      const baseLogDir = path.join(os.homedir(), 'strapi-logs');
+      const baseLogDir = path.join(__dirname, 'strapi-logs');
       // Create date-specific directory
       const dateDir = path.join(baseLogDir, dateStr);
 
@@ -40,7 +40,7 @@ export const createErrorFiles = async (result, name, includedResult = []) => {
         strapi.log.info(`Created failed records log file at ${filePath}`);
       }
     } catch (error) {
-      strapi.log.error(`Error creating logs directory: ${error.message}`);
+      strapi.log.error(`Error creating logs directory for ${name}: ${error.message}`);
     }
   }
 };

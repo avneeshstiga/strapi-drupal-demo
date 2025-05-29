@@ -294,6 +294,12 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             return ctx.badRequest('Request body must contain a "data" array');
           }
 
+          await createErrorFiles(
+            transformedResult,
+            `importFromLocalFile-transformDrupalToStrapi-${contentType}`,
+            jsonData.included
+          );
+
           // Log import request for debugging
           strapi.log.info(`Importing ${transformed.length} records into ${contentType}`);
 
@@ -303,12 +309,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             .service('service')
             .importData(contentType, transformed, update);
 
-          await createErrorFiles(
-            transformedResult,
-            `importFromLocalFile-transformDrupalToStrapi-${contentType}`,
-            jsonData.included
-          );
-          await createErrorFiles(result, `importFromLocalFile-${contentType}`);
+          await createErrorFiles(result, `importFromLocalFile-importToStrapi-${contentType}`);
 
           const endTime = Date.now();
           const duration = (endTime - startTime) / 1000 / 60;
@@ -399,6 +400,12 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           return ctx.badRequest('Request body must contain a "data" array');
         }
 
+        await createErrorFiles(
+          transformedResult,
+          `fetch-drupal-transformDrupalToStrapi-${contentType}`,
+          includedResult
+        );
+
         // Log import request for debugging
         strapi.log.info(`Importing ${transformed.length} records into ${contentType}`);
 
@@ -408,12 +415,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
           .service('service')
           .importData(contentType, transformed);
 
-        await createErrorFiles(
-          transformedResult,
-          `transformDrupalToStrapi-${contentType}`,
-          includedResult
-        );
-        await createErrorFiles(result, contentType);
+        await createErrorFiles(result, `fetch-drupal-importToStrapi-${contentType}`);
 
         const endTime = Date.now();
         const duration = (endTime - startTime) / 1000 / 60;
