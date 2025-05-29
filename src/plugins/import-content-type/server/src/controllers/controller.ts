@@ -338,6 +338,7 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
         baseUrl,
         endpoint,
         params,
+        dataController,
         contentType,
         fieldsMapping,
         relationsMapping,
@@ -356,7 +357,8 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
       const agent = new https.Agent({ rejectUnauthorized: false });
 
       while (hasNextPage) {
-        const limit = 50;
+        const limit =
+          dataController?.limit && dataController?.limit < 50 ? dataController?.limit : 50;
         const offset = (page - 1) * limit;
         refinedBaseUrl = baseUrl.replace(/\/$/, '');
         const refinedEndpoint = endpoint.replace(/^\//, '');
@@ -377,6 +379,9 @@ const controller = ({ strapi }: { strapi: Core.Strapi }) => ({
             allResults = allResults.concat(data);
             includedResult = response.data && response.data.included ? response.data.included : [];
             page++;
+            hasNextPage = dataController?.limit
+              ? !(allResults.length >= dataController?.limit)
+              : true;
           }
         } catch (err) {
           strapi.log.error(`Error fetching from Drupal: ${err.message}`);
