@@ -4,32 +4,54 @@
   "info": {
     "singularName": "campaign-materials-state-photo-type",
     "pluralName": "campaign-materials-state-photo-types",
-    "displayName": "Campaign Materials State Photo Types"
+    "displayName": "Campaign Materials State Photo Types",
+    "description": ""
   },
   "options": {
     "draftAndPublish": true
   },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
   "attributes": {
-    "name": {
-      "type": "string",
-      "required": true
-    },
-    "drupal_id": {
-      "type": "string"
-    },
-    "drupal_published": {
-      "type": "boolean"
-    },
-    "description": {
-      "type": "text"
-    },
-    "languages": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::language.language"
-    },
     "url_alias": {
       "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 60,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      },
+      "required": true
+    },
+    "description": {
+      "type": "blocks",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "drupal_id": {
+      "type": "string",
+      "unique": true
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+    "drupal_langcode": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "integer"
+    },
+    "drupal_internal__tid": {
+      "type": "integer"
     }
   }
 }

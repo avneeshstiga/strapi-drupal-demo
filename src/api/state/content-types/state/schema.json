@@ -4,37 +4,50 @@
   "info": {
     "singularName": "state",
     "pluralName": "states",
-    "displayName": "States",
+    "displayName": "State",
     "description": ""
   },
   "options": {
     "draftAndPublish": true
   },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
   "attributes": {
+    "drupal_id": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_internal__tid": {
+      "type": "integer"
+    },
+    "drupal_langcode": {
+      "type": "string"
+    },
     "name": {
       "type": "string",
-      "required": true,
-      "maxLength": 60
+      "maxLength": 100,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      },
+      "required": true
     },
     "description": {
-      "type": "blocks"
+      "type": "blocks",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
     },
-    "languages": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::language.language"
+    "weight": {
+      "type": "integer"
     },
-    "url_alias": {
-      "type": "string"
-    },
-    "pim_id": {
-      "type": "string",
-      "maxLength": 60
-    },
-    "drupal_id": {
-      "type": "string"
-    },
-    "drupal_published": {
+    "default_langcode": {
       "type": "boolean"
     },
     "facebook_link": {
@@ -43,10 +56,14 @@
     "linkedin_link": {
       "type": "json"
     },
-    "youtube_link": {
-      "type": "json"
+    "pim_id": {
+      "type": "string",
+      "maxLength": 60
     },
     "twitter_link": {
+      "type": "json"
+    },
+    "youtube_link": {
       "type": "json"
     },
     "ac_types": {
