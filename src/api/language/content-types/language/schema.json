@@ -10,24 +10,49 @@
   "options": {
     "draftAndPublish": true
   },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
   "attributes": {
-    "booksmonograph_langode": {
-      "type": "string",
-      "maxLength": 255
-    },
-    "drupal_id": {
-      "type": "string"
-    },
-    "drupal_published": {
-      "type": "boolean"
-    },
     "name": {
       "type": "string",
-      "required": true,
-      "maxLength": 60
+      "maxLength": 60,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      },
+      "required": true
     },
     "description": {
-      "type": "blocks"
+      "type": "blocks",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "drupal_id": {
+      "type": "string",
+       "unique": true
+    },
+    "default_langcode": {
+      "type": "boolean"
+    },
+     "drupal_langcode": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "integer"
+    },
+    "url_alias": {
+      "type": "string",
+      "unique": true
+    },
+    "drupal_internal__tid": {
+      "type": "integer"
     }
   }
 }

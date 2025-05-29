@@ -10,26 +10,36 @@
   "options": {
     "draftAndPublish": true
   },
+  "pluginOptions": {
+    "i18n": {
+      "localized": true
+    }
+  },
   "attributes": {
-    "languages": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::language.language"
-    },
     "name": {
       "type": "string",
+      "maxLength": 60,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      },
       "required": true
     },
-   "description": {
-      "type": "blocks"
+    "drupal_id": {
+      "type": "string",
+       "unique": true
     },
     "default_langcode": {
       "type": "boolean"
     },
-    "metatag": {
-      "type": "json"
+     "drupal_langcode": {
+      "type": "string"
     },
-    "field_microsite_category_image": {
+    "weight": {
+      "type": "integer"
+    },
+    "microsite_category_image": {
       "type": "media",
       "multiple": false,
       "required": false
@@ -38,8 +48,8 @@
       "type": "string",
       "unique": true
     },
-    "drupal_id": {
-      "type": "string"
+    "drupal_internal__tid": {
+      "type": "integer"
     }
   }
 }
